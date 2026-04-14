@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 일기 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <h1 style="font-size: 1.25rem">일기</h1>
+        <p class="ln-muted">2026년 4월 14일 (월)</p>
+        <div class="ln-field" style="margin-bottom: 1rem">
+          <label for="tpl">템플릿</label>
+          <select class="ln-select" id="tpl" name="tpl">
+            <option>자유 작성</option>
+            <option>감사 3줄</option>
+            <option>오늘의 한 줄</option>
+          </select>
+        </div>
+        <div class="ln-field">
+          <label for="body">본문</label>
+          <textarea class="ln-textarea" id="body" placeholder="오늘 하루를 기록해 보세요."></textarea>
+        </div>
+        <div class="ln-row" style="margin-top: 1rem">
+          <button type="button" class="ln-btn ln-btn-ghost">임시저장</button>
+          <button type="button" class="ln-btn ln-btn-primary">완료 (목업)</button>
+        </div>
+      </main>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html">홈</a>
+        <a class="ln-tab" href="app-todo.html">할 일</a>
+        <a class="ln-tab" href="app-budget.html">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

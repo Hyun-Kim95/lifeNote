@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 식비 기록 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="app-home.html">← 홈</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <h1 style="font-size: 1.25rem">식비 · 오늘 기록</h1>
+        <section class="ln-card" aria-label="이번 달 요약">
+          <div class="ln-row">
+            <span class="ln-muted">4월 예산</span>
+            <strong>400,000원</strong>
+          </div>
+          <div class="ln-row" style="margin-top: 0.5rem">
+            <span class="ln-muted">누적 사용</span>
+            <strong>275,800원</strong>
+          </div>
+          <div class="ln-row" style="margin-top: 0.5rem">
+            <span class="ln-muted">남은 금액</span>
+            <strong style="color: var(--ln-primary)">124,200원</strong>
+          </div>
+        </section>
+        <form class="ln-card" aria-label="오늘 지출 입력">
+          <h2>오늘 지출</h2>
+          <div class="ln-field" style="margin-bottom: 1rem">
+            <label for="amt">금액 (원)</label>
+            <input class="ln-input" id="amt" name="amt" type="number" inputmode="numeric" placeholder="18500" />
+          </div>
+          <div class="ln-field" style="margin-bottom: 1rem">
+            <label for="memo">메모 (선택)</label>
+            <textarea class="ln-textarea" id="memo" name="memo" rows="3" placeholder="점심 도시락, 커피 등"></textarea>
+          </div>
+          <button type="button" class="ln-btn ln-btn-primary" style="width: 100%">저장 (목업)</button>
+        </form>
+        <details class="ln-details">
+          <summary>상태 UI 변형</summary>
+          <section class="ln-card" style="margin-top: 1rem">
+            <h3>빈 기록</h3>
+            <p class="ln-muted">아직 오늘 지출이 없습니다.</p>
+          </section>
+          <section class="ln-card">
+            <h3>오류</h3>
+            <p class="ln-muted">저장에 실패했습니다.</p>
+            <button type="button" class="ln-btn ln-btn-ghost">재시도</button>
+          </section>
+        </details>
+      </main>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html">홈</a>
+        <a class="ln-tab" href="app-todo.html">할 일</a>
+        <a class="ln-tab" href="app-budget.html" aria-current="page">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

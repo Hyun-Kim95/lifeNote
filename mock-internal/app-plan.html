@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 주간 계획 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .ln-week {
+        display: grid;
+        grid-template-columns: 56px repeat(7, 1fr);
+        gap: 2px;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+      }
+      .ln-week div {
+        padding: 0.35rem;
+        background: var(--ln-surface-2);
+        text-align: center;
+      }
+      .ln-week .head {
+        font-weight: 700;
+      }
+      .ln-slot {
+        min-height: 36px;
+        border-radius: 6px;
+        background: var(--ln-card);
+        border: 1px dashed var(--ln-border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <h1 style="font-size: 1.25rem">이번 주 계획</h1>
+        <p class="ln-muted">4월 14일 — 4월 20일 · 드래그 입력은 구현 단계</p>
+        <section class="ln-card" aria-label="주간 그리드 목업">
+          <div class="ln-week" role="grid" aria-label="요일별 시간 블록">
+            <div class="head">시간</div>
+            <div class="head">월</div>
+            <div class="head">화</div>
+            <div class="head">수</div>
+            <div class="head">목</div>
+            <div class="head">금</div>
+            <div class="head">토</div>
+            <div class="head">일</div>
+            <div>09:00</div>
+            <div class="ln-slot" aria-label="월요일 9시 빈칸"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div>12:00</div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div>18:00</div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+            <div class="ln-slot"></div>
+          </div>
+        </section>
+        <button type="button" class="ln-btn ln-btn-primary" style="width: 100%">블록 추가 (목업)</button>
+      </main>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html">홈</a>
+        <a class="ln-tab" href="app-todo.html">할 일</a>
+        <a class="ln-tab" href="app-budget.html">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

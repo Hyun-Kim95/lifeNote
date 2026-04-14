@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote Admin — 공지사항 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-admin">
+      <aside class="ln-side" aria-label="관리자 메뉴">
+        <p style="font-weight: 800; margin-top: 0">lifeNote Admin</p>
+        <nav>
+          <a href="admin-members.html">회원관리</a>
+          <a href="#">관리자관리</a>
+          <a href="#">메뉴관리</a>
+          <a href="#">일기템플릿</a>
+          <a href="admin-banners.html">배너관리</a>
+          <a href="admin-notices.html" aria-current="page">공지사항</a>
+          <a href="#">커뮤니티</a>
+          <a href="#">팝업</a>
+        </nav>
+      </aside>
+      <div class="ln-admin-main">
+        <header class="ln-topbar" style="position: relative">
+          <h1 style="margin: 0; font-size: 1.25rem">공지사항</h1>
+          <div class="ln-row">
+            <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+            <a class="ln-btn ln-btn-ghost" href="index.html">허브</a>
+          </div>
+        </header>
+        <section class="ln-filters" aria-label="필터">
+          <div class="ln-field">
+            <label for="from">시작일</label>
+            <input class="ln-input" id="from" type="date" />
+          </div>
+          <div class="ln-field">
+            <label for="to">종료일</label>
+            <input class="ln-input" id="to" type="date" />
+          </div>
+          <div class="ln-field" style="flex: 1; min-width: 200px">
+            <label for="q">검색</label>
+            <input class="ln-input" id="q" type="search" placeholder="제목 검색" />
+          </div>
+          <div class="ln-field">
+            <label for="st">상태</label>
+            <select class="ln-select" id="st">
+              <option>전체</option>
+              <option>게시중</option>
+              <option>예약</option>
+              <option>종료</option>
+            </select>
+          </div>
+          <button type="button" class="ln-btn ln-btn-primary">검색</button>
+          <button type="button" class="ln-btn ln-btn-ghost">초기화</button>
+        </section>
+        <div class="ln-table-wrap">
+          <table class="ln-table">
+            <thead>
+              <tr>
+                <th scope="col">제목</th>
+                <th scope="col">고정</th>
+                <th scope="col">게시기간</th>
+                <th scope="col">상태</th>
+                <th scope="col">수정일</th>
+                <th scope="col">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>점검 안내 (4/15)</td>
+                <td><span class="ln-badge">고정</span></td>
+                <td>2026-04-10 ~ 04-20</td>
+                <td>게시중</td>
+                <td>2026-04-12</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">미리보기</button></td>
+              </tr>
+              <tr>
+                <td>신규 기능 안내</td>
+                <td>—</td>
+                <td>2026-04-01 ~ 04-30</td>
+                <td>게시중</td>
+                <td>2026-04-05</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">수정</button></td>
+              </tr>
+              <tr>
+                <td>커뮤니티 가이드</td>
+                <td>—</td>
+                <td>2026-05-01 ~ 05-31</td>
+                <td>예약</td>
+                <td>2026-04-02</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">삭제</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav class="ln-pagination" aria-label="페이지네이션">
+          <button type="button" class="ln-page-btn" aria-label="이전 페이지">&lt;</button>
+          <button type="button" class="ln-page-btn" aria-current="page">1</button>
+          <button type="button" class="ln-page-btn">2</button>
+          <button type="button" class="ln-page-btn">3</button>
+          <button type="button" class="ln-page-btn" aria-label="다음 페이지">&gt;</button>
+        </nav>
+        <p class="ln-muted" style="font-size: 0.8rem; text-align: center">목업: 행 3개 표시. 운영 시 페이지당 15건 권장.</p>
+        <details class="ln-details" style="margin-top: 1rem">
+          <summary>상태: 로딩 / 빈 / 오류 / 권한</summary>
+          <p class="ln-muted" style="margin-top: 0.75rem">테이블 스켈레톤, 빈 목록 문구, 재시도, 403 메시지는 구현 시 동일 패턴 적용.</p>
+        </details>
+      </div>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 로그인 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <h1 style="font-size: 1.5rem; text-align: center; margin-top: 1rem">lifeNote</h1>
+        <p class="ln-muted" style="text-align: center">SNS 한 종류로 시작 (MVP)</p>
+        <section class="ln-card" style="margin-top: 2rem">
+          <button type="button" class="ln-btn ln-btn-primary" style="width: 100%; margin-bottom: 0.75rem">
+            Google로 계속하기 (예시)
+          </button>
+          <p class="ln-muted" style="text-align: center; font-size: 0.8rem">실제 연동 전까지 비활성 UI</p>
+        </section>
+        <hr style="border: none; border-top: 1px solid var(--ln-border); margin: 1.5rem 0" />
+        <section aria-label="이메일 옵션">
+          <h2 class="ln-muted" style="font-size: 0.875rem">또는 이메일 (선택)</h2>
+          <div class="ln-field" style="margin-bottom: 0.75rem">
+            <label for="email">이메일</label>
+            <input class="ln-input" id="email" type="email" autocomplete="email" placeholder="you@example.com" />
+          </div>
+          <button type="button" class="ln-btn ln-btn-ghost" style="width: 100%">이메일 링크 받기 (목업)</button>
+        </section>
+        <details class="ln-details">
+          <summary>상태: 로딩 / 오류</summary>
+          <p class="ln-muted" style="margin-top: 0.75rem">로그인 진행 중 스피너, OAuth 오류 메시지 등은 구현 단계에서 추가.</p>
+        </details>
+      </main>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

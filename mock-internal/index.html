@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote 자체 목업 허브</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="ln-topbar">
+      <strong>lifeNote · 자체 목업 (내부 트랙)</strong>
+      <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+    </header>
+    <main class="ln-hub">
+      <p class="ln-card" role="status" style="margin-bottom: 1rem; border-color: var(--ln-primary)">
+        <strong>디자인 확정:</strong> 시각·UI 톤은 <strong>Stitch</strong> 기준(
+        <a href="../docs/design/stitch-lifenote-handoff.md">handoff</a>)입니다. 이 사이트는 참고·미생성 흐름(통계·커뮤 등) 보조용입니다.
+      </p>
+      <p class="ln-muted">
+        실행 방법은
+        <a href="README.md">mock-internal/README.md</a> 참고.
+      </p>
+      <h1>화면 맵</h1>
+      <p>
+        <span class="ln-tag">자체</span> 열은 이 폴더의 HTML입니다.
+        <span class="ln-tag">Stitch</span> 열은 Stitch 프로젝트
+        <code>444902834666992493</code> 캔버스에서 동명 화면을 확인합니다. 상세 ID는
+        <a href="../docs/design/stitch-lifenote-handoff.md">stitch-lifenote-handoff.md</a>.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>흐름</th>
+            <th>자체 목업</th>
+            <th>Stitch (대응)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>모바일 홈(오늘)</td>
+            <td><a href="app-home.html">app-home.html</a></td>
+            <td>홈 (오늘)</td>
+          </tr>
+          <tr>
+            <td>모바일 To-do</td>
+            <td><a href="app-todo.html">app-todo.html</a></td>
+            <td>오늘의 할 일 목록</td>
+          </tr>
+          <tr>
+            <td>식비 일별 입력</td>
+            <td><a href="app-budget.html">app-budget.html</a></td>
+            <td>식비 기록</td>
+          </tr>
+          <tr>
+            <td>주간 계획표</td>
+            <td><a href="app-plan.html">app-plan.html</a></td>
+            <td>주간 계획표</td>
+          </tr>
+          <tr>
+            <td>일기 작성</td>
+            <td><a href="app-diary.html">app-diary.html</a></td>
+            <td>일기 작성</td>
+          </tr>
+          <tr>
+            <td>SNS 로그인</td>
+            <td><a href="app-login.html">app-login.html</a></td>
+            <td>SNS 로그인 (MVP)</td>
+          </tr>
+          <tr>
+            <td>통계</td>
+            <td><a href="app-stats.html">app-stats.html</a></td>
+            <td>Stitch 미생성(요청 시 추가)</td>
+          </tr>
+          <tr>
+            <td>커뮤니티 피드</td>
+            <td><a href="app-community.html">app-community.html</a></td>
+            <td>Stitch 미생성(요청 시 추가)</td>
+          </tr>
+          <tr>
+            <td>관리자 공지</td>
+            <td><a href="admin-notices.html">admin-notices.html</a></td>
+            <td>공지사항 관리 목록</td>
+          </tr>
+          <tr>
+            <td>관리자 배너(명언)</td>
+            <td><a href="admin-banners.html">admin-banners.html</a></td>
+            <td>명언 배너 관리</td>
+          </tr>
+          <tr>
+            <td>관리자 회원</td>
+            <td><a href="admin-members.html">admin-members.html</a></td>
+            <td>회원 관리 목록</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>상태 UI</h2>
+      <p class="ln-muted">
+        각 자체 목업 페이지 하단의 접는 패널에서 로딩·빈·오류·권한 예시를 둡니다. Stitch 쪽도 동일
+        시나리오가 포함돼 있으면 정합 비교에 사용합니다.
+      </p>
+    </main>
+    <script src="theme.js"></script>
+  </body>
+</html>

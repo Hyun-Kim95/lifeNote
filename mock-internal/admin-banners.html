@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote Admin — 배너·명언 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-admin">
+      <aside class="ln-side" aria-label="관리자 메뉴">
+        <p style="font-weight: 800; margin-top: 0">lifeNote Admin</p>
+        <nav>
+          <a href="admin-members.html">회원관리</a>
+          <a href="#">관리자관리</a>
+          <a href="#">메뉴관리</a>
+          <a href="#">일기템플릿</a>
+          <a href="admin-banners.html" aria-current="page">배너관리</a>
+          <a href="admin-notices.html">공지사항</a>
+          <a href="#">커뮤니티</a>
+          <a href="#">팝업</a>
+        </nav>
+      </aside>
+      <div class="ln-admin-main">
+        <header class="ln-topbar" style="position: relative">
+          <h1 style="margin: 0; font-size: 1.25rem">명언 배너</h1>
+          <div class="ln-row">
+            <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+            <a class="ln-btn ln-btn-primary" href="#">새 배너 (목업)</a>
+            <a class="ln-btn ln-btn-ghost" href="index.html">허브</a>
+          </div>
+        </header>
+        <section class="ln-filters" aria-label="필터">
+          <div class="ln-field" style="flex: 1">
+            <label for="bq">문구 검색</label>
+            <input class="ln-input" id="bq" type="search" placeholder="인용문 검색" />
+          </div>
+          <div class="ln-field">
+            <label for="bon">노출</label>
+            <select class="ln-select" id="bon">
+              <option>전체</option>
+              <option>ON</option>
+              <option>OFF</option>
+            </select>
+          </div>
+          <button type="button" class="ln-btn ln-btn-primary">검색</button>
+        </section>
+        <div class="ln-table-wrap">
+          <table class="ln-table">
+            <thead>
+              <tr>
+                <th scope="col">문구</th>
+                <th scope="col">출처</th>
+                <th scope="col">우선순위</th>
+                <th scope="col">기간</th>
+                <th scope="col">상태</th>
+                <th scope="col">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>작은 기록이 모여 하루를 바꿉니다.</td>
+                <td>lifeNote</td>
+                <td>10</td>
+                <td>2026-04-01 ~ 04-30</td>
+                <td>ON</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">수정</button></td>
+              </tr>
+              <tr>
+                <td>오늘의 완료율을 칭찬해 주세요.</td>
+                <td>편집부</td>
+                <td>5</td>
+                <td>상시</td>
+                <td>ON</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">미리보기</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav class="ln-pagination" aria-label="페이지네이션">
+          <button type="button" class="ln-page-btn" aria-label="이전 페이지">&lt;</button>
+          <button type="button" class="ln-page-btn" aria-current="page">1</button>
+          <button type="button" class="ln-page-btn" aria-label="다음 페이지">&gt;</button>
+        </nav>
+      </div>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// OAuth(Google 등) 연동 사용자 — 필드는 이후 마이그레이션으로 확장
+model User {
+  id           String    @id @default(cuid())
+  email        String?   @unique
+  displayName  String?
+  /// PATCH /v1/me 의 profile (ageBand, employed 등) — JSON
+  profile      Json?
+  role         UserRole  @default(USER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts          Account[]
+  todos             Todo[]
+  foodMonthBudgets  FoodMonthBudget[]
+  foodDaySpends     FoodDaySpend[]
+  weekPlans         WeekPlan[]
+  diaries           Diary[]
+  communityPosts    CommunityPost[]
+  communityComments CommunityComment[]
+  communityReports  CommunityReport[]
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model Account {
+  id         String   @id @default(cuid())
+  userId     String
+  provider   String
+  providerId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+}
+
+enum TodoPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model Todo {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  dueOn     DateTime?    @db.Date
+  priority  TodoPriority @default(NORMAL)
+  done      Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, dueOn])
+}
+
+/// 관리자가 등록하는 명언(활성 중 홈·배너 API에 노출)
+model QuoteBanner {
+  id        String   @id @default(cuid())
+  text      String
+  source    String   @default("lifeNote")
+  priority  Int      @default(0)
+  active    Boolean  @default(true)
+  startAt   DateTime?
+  endAt     DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, priority(sort: Desc)])
+}
+
+/// 월별 식비 예산(사용자별)
+model FoodMonthBudget {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yearMonth     String
+  budgetAmount  Int
+
+  @@unique([userId, yearMonth])
+}
+
+/// 일별 식비 지출(사용자별, 일 1건 upsert)
+model FoodDaySpend {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  amount    Int      @default(0)
+  memo      String?
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+/// 주간 계획(사용자별, weekStart = 해당 주 월요일 YYYY-MM-DD)
+model WeekPlan {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  slots     PlanSlot[]
+
+  @@unique([userId, weekStart])
+}
+
+enum PlanPeriod {
+  MORNING
+  FORENOON
+  AFTERNOON
+  EVENING
+}
+
+model PlanSlot {
+  id         String     @id @default(cuid())
+  weekPlanId String
+  weekPlan   WeekPlan   @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  period     PlanPeriod
+  label      String
+  sortOrder  Int        @default(0)
+
+  @@index([weekPlanId, dayOfWeek, sortOrder])
+}
+
+enum NoticeStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ENDED
+}
+
+/// 공지(관리자 작성, 사용자는 published 만 조회)
+model Notice {
+  id          String       @id @default(cuid())
+  title       String
+  body        String       @db.Text
+  pinned      Boolean      @default(false)
+  publishStartAt DateTime?
+  publishEndAt DateTime?
+  status      NoticeStatus @default(DRAFT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, pinned(sort: Desc), publishStartAt(sort: Desc)])
+}
+
+/// 일기 템플릿(공개 조회)
+model DiaryTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  schema    Json
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// 사용자 일기(날짜별 1건)
+model Diary {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime @db.Date
+  templateId String?
+  title      String?
+  body       String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+/// 커뮤니티 게시글(2차)
+model CommunityPost {
+  id        String              @id @default(cuid())
+  authorId  String
+  author    User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title     String?
+  body      String              @db.Text
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  comments  CommunityComment[]
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model CommunityComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String        @db.Text
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([postId, createdAt])
+}
+
+enum CommunityReportTarget {
+  POST
+  COMMENT
+}
+
+/// 신고(동일 대상·동일 신고자 1건)
+model CommunityReport {
+  id         String                @id @default(cuid())
+  reporterId String
+  reporter   User                  @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType CommunityReportTarget
+  targetId   String
+  reason     String?
+  createdAt  DateTime              @default(now())
+
+  @@unique([reporterId, targetType, targetId])
+  @@index([targetType, targetId])
+}

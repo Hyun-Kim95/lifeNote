@@ -1,0 +1,9 @@
+{
+  "repositories": [
+    {
+      "slug": "my-cursor-template",
+      "path": "d:\\cursor\\my-cursor-template",
+      "docsPaths": ["docs"]
+    }
+  ]
+}

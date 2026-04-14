@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 홈 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main" aria-label="홈 본문">
+        <div class="ln-row" style="margin-bottom: 1rem">
+          <div>
+            <h1 style="font-size: 1.25rem">안녕하세요, 민지님</h1>
+            <p class="ln-muted" style="margin: 0">4월 14일 월요일</p>
+          </div>
+          <button type="button" class="ln-btn ln-btn-ghost" aria-label="알림 열기">🔔 알림</button>
+        </div>
+        <section class="ln-card" aria-label="명언 배너">
+          <p style="margin: 0 0 0.5rem; font-style: italic">“작은 기록이 모여 하루를 바꿉니다.”</p>
+          <p class="ln-muted" style="margin: 0">— lifeNote</p>
+        </section>
+        <section class="ln-card" aria-label="오늘 할 일 요약">
+          <div class="ln-row">
+            <h2>오늘 할 일</h2>
+            <a href="app-todo.html">전체보기</a>
+          </div>
+          <p class="ln-muted">3 / 8 완료</p>
+          <div class="ln-progress" role="progressbar" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100" aria-label="완료율 38퍼센트">
+            <span style="width: 38%"></span>
+          </div>
+        </section>
+        <section class="ln-card" aria-label="식비 요약">
+          <h2>4월 식비</h2>
+          <p class="ln-muted">예산 400,000원 · 오늘 18,500원</p>
+          <p style="font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0">남은 금액 124,200원</p>
+          <a class="ln-btn ln-btn-primary" href="app-budget.html" style="width: 100%; margin-top: 0.5rem">기록하기</a>
+        </section>
+        <section aria-label="빠른 이동">
+          <h2 class="ln-muted" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.04em">바로가기</h2>
+          <div class="ln-grid-2">
+            <a class="ln-quick" href="app-plan.html"><span class="icon" aria-hidden="true">📅</span>계획표</a>
+            <a class="ln-quick" href="app-diary.html"><span class="icon" aria-hidden="true">📝</span>일기</a>
+            <a class="ln-quick" href="admin-notices.html"><span class="icon" aria-hidden="true">📣</span>공지(웹)</a>
+            <a class="ln-quick" href="app-stats.html"><span class="icon" aria-hidden="true">📊</span>통계</a>
+          </div>
+        </section>
+        <details class="ln-details">
+          <summary>상태 UI 변형 (자체)</summary>
+          <section class="ln-card" style="margin-top: 1rem" aria-label="로딩 예시">
+            <h3>로딩</h3>
+            <div class="ln-skel" style="width: 60%; margin-bottom: 0.5rem"></div>
+            <div class="ln-skel" style="width: 90%"></div>
+          </section>
+          <section class="ln-card" aria-label="빈 데이터 예시">
+            <h3>빈 To-do</h3>
+            <p class="ln-muted">오늘 할 일이 없습니다. 첫 할 일을 추가해 보세요.</p>
+            <button type="button" class="ln-btn ln-btn-primary">할 일 추가</button>
+          </section>
+          <section class="ln-card" aria-label="오류 예시">
+            <h3>오류</h3>
+            <p class="ln-muted">데이터를 불러오지 못했습니다.</p>
+            <button type="button" class="ln-btn ln-btn-ghost">다시 시도</button>
+          </section>
+          <section class="ln-card" aria-label="권한 예시">
+            <h3>로그인 필요</h3>
+            <p class="ln-muted">맞춤 요약을 보려면 로그인하세요.</p>
+            <a class="ln-btn ln-btn-primary" href="app-login.html">로그인</a>
+          </section>
+        </details>
+      </main>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html" aria-current="page">홈</a>
+        <a class="ln-tab" href="app-todo.html">할 일</a>
+        <a class="ln-tab" href="app-budget.html">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

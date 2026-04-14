@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 통계 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .ln-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5rem;
+        height: 140px;
+        margin-top: 0.5rem;
+      }
+      .ln-bar {
+        flex: 1;
+        background: var(--ln-primary);
+        border-radius: 6px 6px 0 0;
+        opacity: 0.85;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <h1 style="font-size: 1.25rem">통계</h1>
+        <div class="ln-chips" style="margin: 0.75rem 0 1rem">
+          <button type="button" class="ln-chip" aria-selected="true">이번 주</button>
+          <button type="button" class="ln-chip" aria-selected="false">이번 달</button>
+          <button type="button" class="ln-chip" aria-selected="false">올해</button>
+        </div>
+        <section class="ln-card" aria-label="To-do 완료 추이 목업">
+          <h2>To-do 완료</h2>
+          <p class="ln-muted">최근 7일 (가짜 데이터)</p>
+          <div class="ln-bars" aria-hidden="true">
+            <div class="ln-bar" style="height: 40%"></div>
+            <div class="ln-bar" style="height: 55%"></div>
+            <div class="ln-bar" style="height: 30%"></div>
+            <div class="ln-bar" style="height: 70%"></div>
+            <div class="ln-bar" style="height: 45%"></div>
+            <div class="ln-bar" style="height: 80%"></div>
+            <div class="ln-bar" style="height: 60%"></div>
+          </div>
+        </section>
+        <section class="ln-card">
+          <h2>식비 추이</h2>
+          <p class="ln-muted">주간 합계 vs 예산 (목업)</p>
+          <div class="ln-progress"><span style="width: 72%"></span></div>
+          <p style="margin: 0.5rem 0 0" class="ln-muted">예산 대비 72% 사용</p>
+        </section>
+      </main>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html">홈</a>
+        <a class="ln-tab" href="app-todo.html">할 일</a>
+        <a class="ln-tab" href="app-budget.html">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

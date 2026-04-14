@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote Admin — 회원 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-admin">
+      <aside class="ln-side" aria-label="관리자 메뉴">
+        <p style="font-weight: 800; margin-top: 0">lifeNote Admin</p>
+        <nav>
+          <a href="admin-members.html" aria-current="page">회원관리</a>
+          <a href="#">관리자관리</a>
+          <a href="#">메뉴관리</a>
+          <a href="#">일기템플릿</a>
+          <a href="admin-banners.html">배너관리</a>
+          <a href="admin-notices.html">공지사항</a>
+          <a href="#">커뮤니티</a>
+          <a href="#">팝업</a>
+        </nav>
+      </aside>
+      <div class="ln-admin-main">
+        <header class="ln-topbar" style="position: relative">
+          <h1 style="margin: 0; font-size: 1.25rem">회원관리</h1>
+          <div class="ln-row">
+            <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+            <a class="ln-btn ln-btn-ghost" href="index.html">허브</a>
+          </div>
+        </header>
+        <section class="ln-filters" aria-label="필터">
+          <div class="ln-field" style="flex: 1">
+            <label for="mq">검색</label>
+            <input class="ln-input" id="mq" type="search" placeholder="닉네임, 이메일" />
+          </div>
+          <div class="ln-field">
+            <label for="ms">상태</label>
+            <select class="ln-select" id="ms">
+              <option>전체</option>
+              <option>활성</option>
+              <option>정지</option>
+            </select>
+          </div>
+          <button type="button" class="ln-btn ln-btn-primary">검색</button>
+        </section>
+        <div class="ln-table-wrap">
+          <table class="ln-table">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">닉네임</th>
+                <th scope="col">로그인</th>
+                <th scope="col">상태</th>
+                <th scope="col">가입일</th>
+                <th scope="col">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>10021</td>
+                <td>민지</td>
+                <td>Google</td>
+                <td><span class="ln-badge">활성</span></td>
+                <td>2026-03-02</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">상세</button></td>
+              </tr>
+              <tr>
+                <td>10022</td>
+                <td>준호</td>
+                <td>이메일</td>
+                <td>활성</td>
+                <td>2026-03-11</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">상세</button></td>
+              </tr>
+              <tr>
+                <td>10023</td>
+                <td>anonymous</td>
+                <td>Google</td>
+                <td><span class="ln-badge" style="background: var(--ln-danger-bg); color: var(--ln-danger)">정지</span></td>
+                <td>2026-02-20</td>
+                <td><button type="button" class="ln-btn ln-btn-ghost" style="min-height: 36px">해제</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav class="ln-pagination" aria-label="페이지네이션">
+          <button type="button" class="ln-page-btn" aria-label="이전 페이지">&lt;</button>
+          <button type="button" class="ln-page-btn" aria-current="page">1</button>
+          <button type="button" class="ln-page-btn">2</button>
+          <button type="button" class="ln-page-btn" aria-label="다음 페이지">&gt;</button>
+        </nav>
+      </div>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>

@@ -1,0 +1,86 @@
+# Stitch + 자체 목업 이관 기록 — lifeNote (2026-04-14)
+
+`docs/design/stitch-sop.md` 절차에 따라 Stitch(2B) 생성. PRD: `docs/requirements/prd-lifenote-integrated-app.md`.  
+**자체 목업(2A)**은 `mock-internal/` 정적 HTML로 추가해 Stitch와 **정합 비교**가 가능했다.
+
+## 디자인 확정 (단계 3)
+
+| 항목 | 내용 |
+|------|------|
+| 확정 트랙 | **Stitch** (`projects/444902834666992493`, 디자인 시스템 `assets/17014072979125403972`) |
+| 승인일 | 2026-04-14 (채팅) |
+| 자체 목업 | 시각 기준 **비채택**. 레이아웃·카피 참고·통계/커뮤 등 Stitch 미생성 흐름 보조용으로만 유지 가능 |
+
+구현 시 시각 단일 기준은 Stitch이며, 전역 CSS와의 우선순위는 `.cursor/rules/50-index-css-contract.mdc` 및 PRD §13.1을 따른다.
+
+## 자체 목업 (2A)
+
+| 항목 | 값 |
+|------|-----|
+| 경로 | 저장소 루트 `mock-internal/` |
+| 허브 | `mock-internal/index.html` |
+| 실행 | `cd mock-internal && npx --yes serve -l 5175` (README 참고) |
+| 시각 기준 | primary `#0f766e` (Stitch 시드 `#2D6A4F`와 **의도적으로 구분** — 어느 트랙인지 한눈에 구분) |
+| 다크 모드 | 헤더 토글, `data-theme="dark"` |
+
+## Stitch 프로젝트 (2B)
+
+| 항목 | 값 |
+|------|-----|
+| `projectId` (API용 숫자 ID) | `444902834666992493` |
+| 리소스 이름 | `projects/444902834666992493` |
+| Stitch 제목 | lifeNote — 통합 생활 관리 (웹+앱) |
+| `projectType` | `PROJECT_DESIGN` |
+
+Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
+
+## 디자인 시스템 (asset)
+
+| 항목 | 값 |
+|------|-----|
+| `assetId` / `name` | `assets/17014072979125403972` |
+| 표시 이름 | lifeNote — Calm Productivity |
+| 테마 요약 | LIGHT, primary seed `#2D6A4F`, `ROUND_TWELVE`, Manrope + Inter, `NEUTRAL` |
+
+`create_design_system` 직후 `update_design_system`으로 반영 완료.
+
+## 트랙 간 대응표 (비교용)
+
+| 흐름 | 자체 목업 (HTML) | Stitch 화면 제목 | `screens/{id}` |
+|------|------------------|------------------|----------------|
+| 모바일 홈 | `mock-internal/app-home.html` | 홈 (오늘) | `b9fcf59c776642e6b8edd1a6e46199ab` |
+| 모바일 To-do | `mock-internal/app-todo.html` | 오늘의 할 일 목록 | `14b92fc3eb8b4cef972aaa41df8972f3` |
+| 식비 일별 기록 | `mock-internal/app-budget.html` | 식비 기록 | `a2e2b7f5307d43dc875ffcb5aa88d5bb` |
+| 주간 계획표 | `mock-internal/app-plan.html` | 주간 계획표 | `416c8f8a79864af1a32f6e382e8fc017` |
+| 일기 작성 | `mock-internal/app-diary.html` | 일기 작성 | `969235ea993246fc8e38cd2316b22155` |
+| SNS 로그인 | `mock-internal/app-login.html` | SNS 로그인 (MVP) | `1dd03991f80f4a048030813e9ca33630` |
+| 통계 | `mock-internal/app-stats.html` | (미생성 — 필요 시 Stitch 추가) | — |
+| 커뮤니티 | `mock-internal/app-community.html` | (미생성) | — |
+| 관리자 공지 | `mock-internal/admin-notices.html` | 공지사항 관리 목록 | `4d148465ed6c4b66a4ba67c08d3f028b` |
+| 관리자 배너 | `mock-internal/admin-banners.html` | 명언 배너 관리 | `b7e2ef24f90146d78df96bd99221bdda` |
+| 관리자 회원 | `mock-internal/admin-members.html` | 회원 관리 목록 | `d696688a674148239ee542da71d69cb9` |
+
+전체 리소스 이름 예: `projects/444902834666992493/screens/<id>`.
+
+## 프롬프트·생성 배치 요약
+
+- **1차**: 모바일 홈, 데스크톱 공지, 모바일 To-do.
+- **2차(부족 화면 보강)**: 식비 기록, SNS 로그인, 주간 계획표, 일기 작성, 명언 배너 관리, 회원 관리.
+- 모델: `GEMINI_3_FLASH` (`generate_screen_from_text`).
+
+## Stitch 후속 제안(에이전트 출력 취합)
+
+- 통계·커뮤니티·다크 모드 전용 화면, 할 일 추가 모달, 공지/배너 등록 폼, 회원 상세 팝업 등 추가 생성 가능.
+- 스타일 통일: `apply_design_system` + `get_project`의 `screenInstances`로 대상 지정 후 적용 검토.
+
+## SOP 체크리스트
+
+- [x] `projectId` 확정
+- [x] 디자인 시스템 `assets/...` 확정
+- [x] 상태 UI(기본·로딩·빈·오류·권한) 반영
+- [x] 다크모드: 라이트 기준 Stitch + 자체 목업 토글
+- [x] 화면 ID·자체 HTML 경로 기록
+
+## 전역 CSS와의 관계
+
+실제 앱 구현 시 `index.css` / `globals.css` 등과 병행하면 **최종 시각 기준**은 팀 합의로 정한다. `.cursor/rules/50-index-css-contract.mdc` 참고.

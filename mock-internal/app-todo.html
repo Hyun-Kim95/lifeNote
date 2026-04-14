@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lifeNote — 오늘의 할 일 (자체 목업)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ln-app-shell">
+      <header class="ln-topbar">
+        <a class="ln-back" href="index.html">← 허브</a>
+        <button type="button" class="ln-theme-toggle" aria-pressed="false">다크 모드</button>
+      </header>
+      <main class="ln-app-main">
+        <div class="ln-row" style="margin-bottom: 0.75rem">
+          <h1 style="font-size: 1.25rem; margin: 0">오늘의 할 일</h1>
+        </div>
+        <div class="ln-chips" role="tablist" aria-label="필터">
+          <button type="button" class="ln-chip" aria-selected="true">전체</button>
+          <button type="button" class="ln-chip" aria-selected="false">미완료</button>
+          <button type="button" class="ln-chip" aria-selected="false">완료</button>
+        </div>
+        <section class="ln-card" style="margin-top: 1rem" aria-label="완료율">
+          <p class="ln-muted" style="margin: 0">오늘 진행률</p>
+          <p style="font-size: 2rem; font-weight: 800; margin: 0.25rem 0">62%</p>
+          <p class="ln-muted" style="margin: 0 0 0.5rem">5 / 8 완료</p>
+          <div class="ln-progress"><span style="width: 62%"></span></div>
+        </section>
+        <section aria-labelledby="sec-today">
+          <h2 id="sec-today" class="ln-muted" style="font-size: 0.875rem">오늘</h2>
+          <ul class="ln-list">
+            <li>
+              <label class="ln-check">
+                <input type="checkbox" checked />
+                <span><strong>PRD 검토 메일 보내기</strong><br /><span class="ln-muted">기한 · 오늘</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="ln-check">
+                <input type="checkbox" />
+                <span><strong>식비 입력</strong><br /><span class="ln-muted">기한 · 오늘</span></span>
+              </label>
+            </li>
+            <li>
+              <label class="ln-check">
+                <input type="checkbox" />
+                <span><strong>가벼운 산책 20분</strong><br /><span class="ln-muted">기한 · 내일</span></span>
+              </label>
+            </li>
+          </ul>
+        </section>
+        <details class="ln-details">
+          <summary>상태 UI 변형</summary>
+          <p class="ln-muted" style="margin-top: 0.75rem">로딩/빈/오류/로그인 패턴은 홈과 동일하게 적용 가능.</p>
+        </details>
+      </main>
+      <button type="button" class="ln-fab" aria-label="할 일 추가">＋</button>
+      <nav class="ln-tabbar" aria-label="하단 탭">
+        <a class="ln-tab" href="app-home.html">홈</a>
+        <a class="ln-tab" href="app-todo.html" aria-current="page">할 일</a>
+        <a class="ln-tab" href="app-budget.html">가계부</a>
+        <a class="ln-tab" href="app-community.html">커뮤니티</a>
+        <a class="ln-tab" href="index.html">더보기</a>
+      </nav>
+    </div>
+    <script src="theme.js"></script>
+  </body>
+</html>
