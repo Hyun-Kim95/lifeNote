@@ -88,16 +88,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\install-
 
 `sessionStart` 훅이 아래 작업을 프로젝트마다 최초 1회 실행한다.
 
-- `.obsidian-ingest.json`를 자동 갱신(프로젝트명 기준 `slug` 강제 보정)
-- `sync-docs.ps1` 1회 실행
+- `sync-docs.ps1` 1회 실행(실행 시 `.obsidian-ingest.json`이 없으면 생성·`slug` 보정 포함)
 - Git 저장소인 경우 `install-hook.ps1`로 커밋 저널 훅 설치
 
-설정 갱신 정책:
-- `slug`는 현재 프로젝트 폴더명으로 항상 재설정한다.
-- `vaultRoot`, `docsPaths`는 기존 값이 있으면 유지하고, 없으면 기본값을 채운다.
+설정 갱신 정책(구현: `scripts/obsidian/sync-docs.ps1`의 `Ensure-ObsidianIngestConfig`):
+
+- 파일이 없거나 깨졌으면 기본 `vaultRoot`·`docsPaths`로 새로 쓴다.
+- 파일이 있으면 `vaultRoot`·`docsPaths`는 유지한다.
+- `slug`는 **항상 Git 최상위 폴더명과 같도록** 덮어쓴다(템플릿에 남은 잘못된 `slug` 방지).
+
+부트스트랩이 이미 끝난 뒤에도 `.obsidian-ingest.json`만 없으면, 다음 Cursor 세션 시작 시 `bootstrap-obsidian-once.ps1`가 `sync-docs.ps1`만 한 번 더 돌려 복구한다.
 
 재실행 방지 마커:
+
 - `.cursor/state/obsidian-bootstrap.done`
+
+레포에는 `.obsidian-ingest.json`을 올리지 않는 것을 권장한다(`.gitignore`). 예시는 `docs/obsidian/obsidian-ingest.example.json`을 본다.
 
 관련 파일:
 - `.cursor/hooks/bootstrap-obsidian-once.ps1`

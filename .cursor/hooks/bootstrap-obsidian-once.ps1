@@ -14,25 +14,20 @@ try {
     $stateDir = Join-Path $projectRoot ".cursor\state"
     $stateFile = Join-Path $stateDir "obsidian-bootstrap.done"
 
-    # Run only once per project clone/copy.
+    $ingestConfigPath = Join-Path $projectRoot ".obsidian-ingest.json"
+
+    # Run full bootstrap only once; always repair missing ingest (e.g. template without file).
     if (Test-Path -LiteralPath $stateFile) {
+        if (-not (Test-Path -LiteralPath $ingestConfigPath)) {
+            $syncScript = Join-Path $projectRoot "scripts\obsidian\sync-docs.ps1"
+            if (Test-Path -LiteralPath $syncScript) {
+                powershell -NoProfile -ExecutionPolicy Bypass -File $syncScript | Out-Null
+            }
+        }
         exit 0
     }
 
     Ensure-Directory -Path $stateDir
-
-    $ingestConfigPath = Join-Path $projectRoot ".obsidian-ingest.json"
-    if (-not (Test-Path -LiteralPath $ingestConfigPath)) {
-        $slug = Split-Path -Path $projectRoot -Leaf
-        $config = @(
-            "{"
-            "  `"slug`": `"$slug`","
-            "  `"vaultRoot`": `"D:\\Obsidian\\projects`","
-            "  `"docsPaths`": [`"docs`"]"
-            "}"
-        ) -join "`r`n"
-        Set-Content -LiteralPath $ingestConfigPath -Value $config -Encoding UTF8
-    }
 
     $syncScript = Join-Path $projectRoot "scripts\obsidian\sync-docs.ps1"
     if (Test-Path -LiteralPath $syncScript) {

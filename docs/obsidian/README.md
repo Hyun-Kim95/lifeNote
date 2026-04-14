@@ -16,7 +16,7 @@
 2. 훅 없이 수동으로만 동기화하려면 `scripts/obsidian/sync-docs.ps1`만 실행하면 된다.
 3. Obsidian 대시보드에서 Dataview로 프로젝트/저널/데일리 로그를 조회한다.
 
-볼트 경로·슬러그는 레포 루트의 `.obsidian-ingest.json`(선택)으로 맞춘다.
+볼트 경로·슬러그는 레포 루트의 `.obsidian-ingest.json`으로 맞춘다. 이 파일은 **저장하지 않아도 되며**(`.gitignore`에 포함), `sync-docs.ps1` 실행 시 Git 루트 폴더명 기준으로 **없으면 자동 생성**되고, `slug`가 폴더명과 다르면 **폴더명에 맞게 보정**된다. 수동 예시는 `docs/obsidian/obsidian-ingest.example.json`을 참고한다.
 
 ## Cursor에서 자동 설치
 - 세션 시작 시 `.cursor/hooks/bootstrap-obsidian-once.ps1`가 한 번 실행되며, Git 레포면 `install-hook.ps1`까지 호출할 수 있다.
