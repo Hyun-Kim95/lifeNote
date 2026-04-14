@@ -67,7 +67,9 @@ $committedAt = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--date=
 $changedFilesRaw = Run-Git -RepoPath $RepoRoot -GitArguments @("diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
 $changedFiles = @()
 if (-not [string]::IsNullOrWhiteSpace($changedFilesRaw)) {
-    $changedFiles = $changedFilesRaw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    $changedFiles = @(
+        $changedFilesRaw -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
 }
 
 $journalRoot = Join-Path (Join-Path $VaultRoot $slug) "journal"
