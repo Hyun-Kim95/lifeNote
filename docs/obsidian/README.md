@@ -12,7 +12,7 @@
   - `daily-log-overview.md`
 
 ## Core Flow
-1. `scripts/obsidian/install-hook.ps1`로 Git `post-commit`을 설치하면, **커밋할 때마다** (a) `write-commit-journal.ps1`가 저널을 `.../journal`에 추가하고, (b) `sync-docs.ps1`가 문서를 볼트 `.../docs`에 반영한다.
+1. `scripts/obsidian/install-hook.ps1`로 Git `post-commit`을 설치하면, **커밋할 때마다** (a) `write-commit-journal.ps1`가 저널을 `.../journal`에 추가하고(실패해도 커밋은 유지되며), (b) `sync-docs.ps1`가 문서를 볼트 `.../docs`에 반영한다.
 2. 훅 없이 수동으로만 동기화하려면 `scripts/obsidian/sync-docs.ps1`만 실행하면 된다.
 3. Obsidian 대시보드에서 Dataview로 프로젝트/저널/데일리 로그를 조회한다.
 
