@@ -6,6 +6,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Git stdout + Korean Windows: PowerShell 5.x defaults can mangle UTF-8 commit messages.
+$script:Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    [Console]::OutputEncoding = $script:Utf8NoBom
+    $OutputEncoding = $script:Utf8NoBom
+}
+
 function Ensure-Directory {
     param([string]$Path)
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -61,9 +68,10 @@ if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($remoteOrigin)) {
 
 $shaFull = Run-Git -RepoPath $RepoRoot -GitArguments @("rev-parse", "HEAD")
 $shaShort = Run-Git -RepoPath $RepoRoot -GitArguments @("rev-parse", "--short", "HEAD")
-$subject = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--pretty=%s")
-$author = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--pretty=%an")
-$committedAt = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--date=iso", "--pretty=%cd")
+# --encoding=UTF-8: log pretty fields (subject, author, etc.) recode for this process.
+$subject = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--encoding=UTF-8", "--pretty=%s")
+$author = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--encoding=UTF-8", "--pretty=%an")
+$committedAt = Run-Git -RepoPath $RepoRoot -GitArguments @("log", "-1", "--encoding=UTF-8", "--date=iso", "--pretty=%cd")
 $changedFilesRaw = Run-Git -RepoPath $RepoRoot -GitArguments @("diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
 $changedFiles = @()
 if (-not [string]::IsNullOrWhiteSpace($changedFilesRaw)) {
@@ -97,7 +105,7 @@ $null = $frontmatter.Add("committed_at: $committedAt")
 $null = $frontmatter.Add('tags: [tech, commit, journal]')
 $null = $frontmatter.Add('links:')
 $null = $frontmatter.Add('    - ''[[' + $slug + '/docs/_project-doc-index]]''')
-$null = $frontmatter.Add('    - ''[[' + $slug + '/journal]]''')
+$null = $frontmatter.Add('    - ''[[' + $slug + '/docs/obsidian/dashboards/commit-journal-overview]]''')
 $null = $frontmatter.Add('---')
 $null = $frontmatter.Add('')
 
@@ -125,9 +133,12 @@ if ($changedFiles.Count -eq 0) {
 $null = $body.Add('')
 $null = $body.Add('## Related Links')
 $null = $body.Add('- [[' + $slug + '/docs/_project-doc-index]]')
-$null = $body.Add('- [[' + $slug + '/journal]]')
+$null = $body.Add('- [[' + $slug + '/docs/obsidian/dashboards/commit-journal-overview|Commit journal (Dataview)]]')
 
 $content = ($frontmatter + $body) -join "`r`n"
-Set-Content -LiteralPath $notePath -Value $content -Encoding UTF8
+if (-not $content.EndsWith("`n")) {
+    $content += "`r`n"
+}
+[System.IO.File]::WriteAllText($notePath, $content, $script:Utf8NoBom)
 
 Write-Host "Commit journal written: $notePath"

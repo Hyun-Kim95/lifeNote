@@ -34,7 +34,6 @@ function Write-ProjectDocIndex {
     $links += "- '[[" + $Slug + "/docs]]'"
     $links += "- '[[" + $dashProjects + "]]'"
     $links += "- '[[" + $dashJournal + "]]'"
-    $links += "- '[[" + $Slug + "/journal]]'"
     if (Test-Path -LiteralPath $readmePath) {
         $links += "- '[[" + $Slug + "/docs/README]]'"
     }
@@ -72,7 +71,7 @@ function Write-ProjectDocIndex {
     $null = $body.Add('')
     $null = $body.Add('## Quick links')
     $null = $body.Add('- [[' + $Slug + '/docs|Synced docs root]]')
-    $null = $body.Add('- [[' + $Slug + '/journal|Commit journals (post-commit)]]')
+    $null = $body.Add('- [[' + $Slug + '/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]')
     $null = $body.Add('- [[' + $Slug + '/docs/obsidian/README|Obsidian kit notes]]')
     $null = $body.Add('')
     $null = $body.Add('## Meta')

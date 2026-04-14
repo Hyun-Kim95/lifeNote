@@ -37,4 +37,4 @@ npm run e2e:evidence -w web
 
 - [[lifeNote/docs/_project-doc-index|Hub]]
 - [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/journal|Commit journal]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

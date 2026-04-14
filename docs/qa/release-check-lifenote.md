@@ -64,4 +64,4 @@ release-check 절차상 아래는 **실제 브라우저·기기**에서 한 번 
 
 - [[lifeNote/docs/_project-doc-index|Hub]]
 - [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/journal|Commit journal]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

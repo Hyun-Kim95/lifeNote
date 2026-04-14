@@ -97,4 +97,4 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 
 - [[lifeNote/docs/_project-doc-index|Hub]]
 - [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/journal|Commit journal]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

@@ -48,4 +48,4 @@ tags: [docs, vault-sync]
 
 - [[lifeNote/docs/_project-doc-index|Hub]]
 - [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/journal|Commit journal]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

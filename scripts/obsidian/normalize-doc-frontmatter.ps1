@@ -78,7 +78,7 @@ tags: [docs, vault-sync]
 
 - [[$slug/docs/_project-doc-index|Hub]]
 - [[$slug/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[$slug/journal|Commit journal]]
+- [[$slug/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]
 "@
 
         if (-not (Test-HasVaultSection -Text $raw)) {
