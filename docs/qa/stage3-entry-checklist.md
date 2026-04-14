@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: qa
+updated_at: 2026-04-15T00:00:11
+tags: [docs, vault-sync]
+---
 # Stage 3 Entry Checklist (Design Selection -> Parallel Delivery)
 
 디자인 선택 이후 3단계 착수 전에 PRD/디자인 기준 완성 여부를 확인하는 체크리스트다.
@@ -37,3 +44,8 @@
 - [ ] 승인 상태: `승인` / `수정 필요`
 - [ ] 승인 코멘트:
 - [ ] 승인 일시:
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

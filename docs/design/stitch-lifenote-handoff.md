@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: design
+updated_at: 2026-04-15T00:39:38
+tags: [docs, vault-sync]
+---
 # Stitch + 자체 목업 이관 기록 — lifeNote (2026-04-14)
 
 `docs/design/stitch-sop.md` 절차에 따라 Stitch(2B) 생성. PRD: `docs/requirements/prd-lifenote-integrated-app.md`.  
@@ -86,3 +93,8 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 ## 전역 CSS와의 관계
 
 실제 앱 구현 시 `index.css` / `globals.css` 등과 병행하면 **최종 시각 기준**은 팀 합의로 정한다. `.cursor/rules/50-index-css-contract.mdc` 참고.
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: requirements
+updated_at: 2026-04-15T00:39:29
+tags: [docs, vault-sync]
+---
 # PRD — 통합 생활 관리 앱 (lifeNote)
 
 - 문서 상태: **승인됨** (2026-04-14, 채팅 컨펌)
@@ -186,3 +193,8 @@
 
 **다음 단계 (스킬 기준)**  
 **Gate 2**: ~~API 스키마·에러·상태 UI 매핑~~ → **`api-contract-lifenote-v1.md`에 반영(2026-04-14).** 이후 **`parallel-delivery`**로 **공통 API** 변경과 **관리자 웹**·**앱** 구현을 계약에 맞춰 병행한다. 계약 변경 시 본 PRD §8과 계약서 동시 갱신. (Stitch 미생성 화면: 통계·커뮤니티 등은 **앱** 측 구현·추가 Stitch로 보완.)
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: requirements
+updated_at: 2026-04-15T00:18:25
+tags: [docs, vault-sync]
+---
 # lifeNote API 계약 v1 (Gate 2)
 
 - 문서 상태: **확정(초안 기준 구현 착수 가능)** — 필드 추가는 하위 호환·버전 정책으로 관리
@@ -549,3 +556,8 @@ Stitch·PRD의 **로딩·빈·오류·권한**과 대응한다.
 ## 16. 변경 절차
 
 계약 변경 시 `document-change` 또는 동등 프로세스로 본 파일과 PRD §8을 동기화하고, 프론트·백엔드에 공지한다.
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

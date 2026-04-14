@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: qa
+updated_at: 2026-04-15T00:19:09
+tags: [docs, vault-sync]
+---
 # 리뷰어 GATE 요약 (lifeNote 관리자 웹 중심)
 
 작성일: 2026-04-15  
@@ -25,3 +32,8 @@
 
 - 스테이징에서 실데이터로 관리자 3탭 스모크 및 캡처 1회.
 - Stitch 픽셀 검수는 디자인 담당 합의 하에 범위 확정.
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

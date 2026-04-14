@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: qa
+updated_at: 2026-04-15T00:34:49
+tags: [docs, vault-sync]
+---
 # lifeNote 배포 전 점검 (release-check)
 
 실행일: 2026-04-15 (갱신)  
@@ -53,3 +60,8 @@ release-check 절차상 아래는 **실제 브라우저·기기**에서 한 번 
 - 웹 인증 흐름 재구성: 토큰 수동 입력 제거, `login/callback` + 세션/리프레시 적용
 - 웹 CI 추가: `/.github/workflows/ci.yml` (mock E2E 기본, secret 존재 시 live E2E)
 - 인증 E2E 추가: `apps/web/tests/auth-flow.spec.ts`
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

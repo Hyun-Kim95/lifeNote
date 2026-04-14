@@ -1,4 +1,11 @@
-﻿# 관리자 화면 검증 체크리스트 (PRD + Stitch)
+---
+type: doc
+project: lifeNote
+doc_lane: qa
+updated_at: 2026-04-15T00:18:55
+tags: [docs, vault-sync]
+---
+# 관리자 화면 검증 체크리스트 (PRD + Stitch)
 
 최종 갱신: 2026-04-15  
 대상 구현: `apps/web/src/app/admin/page.tsx`
@@ -75,3 +82,8 @@
 - 2026-04-14: `apps/web` 기준 `npm run build` 성공
 - 2026-04-15: `api-contract-lifenote-v1.md` 공지 §9·§13.2 갱신 (`isDraft`, 노출 규칙)
 - 2026-04-15: `npm run e2e:evidence -w web` 로 `docs/qa/evidence/*.png` 생성
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]

@@ -18,6 +18,16 @@
 
 볼트 경로·슬러그는 레포 루트의 `.obsidian-ingest.json`으로 맞춘다. 이 파일은 **저장하지 않아도 되며**(`.gitignore`에 포함), `sync-docs.ps1` 실행 시 Git 루트 폴더명 기준으로 **없으면 자동 생성**되고, `slug`가 폴더명과 다르면 **폴더명에 맞게 보정**된다. 수동 예시는 `docs/obsidian/obsidian-ingest.example.json`을 참고한다.
 
+## 문서를 옵시디언 노트 형태로 (frontmatter + Vault 링크)
+
+`docs/requirements`, `docs/qa`, `docs/design`, `docs/decisions`, `docs/changelog` 아래 `.md` 중 **맨 앞이 `---`가 아닌 파일**에 공통 YAML(`type`, `project`, `doc_lane`, `updated_at`, `tags`)과 맨 아래 `## Vault` 위키링크 블록을 추가한다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normalize-doc-frontmatter.ps1"
+```
+
+이미 frontmatter가 있는 파일은 건너뛴다. 새 문서를 추가한 뒤 위 스크립트를 다시 실행하면 된다.
+
 ## Cursor에서 자동 설치
 - 세션 시작 시 `.cursor/hooks/bootstrap-obsidian-once.ps1`가 한 번 실행되며, Git 레포면 `install-hook.ps1`까지 호출할 수 있다.
 - 에이전트가 파일을 쓸 때(`Write`/`TabWrite`) `.cursor/hooks/ensure-obsidian-git-hook.ps1`가 `post-commit`이 올바른지 보고, 없거나 예전 형식이면 `install-hook.ps1`를 실행한다. (수동으로 `install-hook`을 안 돌려도 된다.)

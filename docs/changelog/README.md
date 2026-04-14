@@ -1,3 +1,10 @@
+---
+type: doc
+project: lifeNote
+doc_lane: changelog
+updated_at: 2026-04-12T00:05:09
+tags: [docs, vault-sync]
+---
 # changelog
 
 이 폴더는 작업 변경 이력을 남긴다.
@@ -12,3 +19,8 @@
 권장 파일명 예시:
 - 2026-04.md
 - 2026-05.md
+## Vault
+
+- [[lifeNote/docs/_project-doc-index|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/journal|Commit journal]]
