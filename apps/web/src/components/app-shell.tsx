@@ -7,12 +7,6 @@ import { useAuthToken } from "@/lib/use-auth-token";
 
 const navItems = [
   { href: "/", label: "홈" },
-  { href: "/todos", label: "할 일" },
-  { href: "/budget", label: "식비" },
-  { href: "/plan", label: "계획" },
-  { href: "/diary", label: "일기" },
-  { href: "/community", label: "커뮤니티" },
-  { href: "/stats", label: "통계" },
   { href: "/admin", label: "관리자" },
 ];
 

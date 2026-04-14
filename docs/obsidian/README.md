@@ -12,9 +12,16 @@
   - `daily-log-overview.md`
 
 ## Core Flow
-1. `scripts/obsidian/sync-docs.ps1`로 문서를 `D:\Obsidian\projects/<project>/docs`로 동기화한다.
-2. 커밋 시 `scripts/obsidian/write-commit-journal.ps1`가 저널을 `.../journal`에 생성한다.
+1. `scripts/obsidian/install-hook.ps1`로 Git `post-commit`을 설치하면, **커밋할 때마다** (a) `write-commit-journal.ps1`가 저널을 `.../journal`에 추가하고, (b) `sync-docs.ps1`가 문서를 볼트 `.../docs`에 반영한다.
+2. 훅 없이 수동으로만 동기화하려면 `scripts/obsidian/sync-docs.ps1`만 실행하면 된다.
 3. Obsidian 대시보드에서 Dataview로 프로젝트/저널/데일리 로그를 조회한다.
+
+볼트 경로·슬러그는 레포 루트의 `.obsidian-ingest.json`(선택)으로 맞춘다.
+
+## Cursor에서 자동 설치
+- 세션 시작 시 `.cursor/hooks/bootstrap-obsidian-once.ps1`가 한 번 실행되며, Git 레포면 `install-hook.ps1`까지 호출할 수 있다.
+- 에이전트가 파일을 쓸 때(`Write`/`TabWrite`) `.cursor/hooks/ensure-obsidian-git-hook.ps1`가 `post-commit`이 올바른지 보고, 없거나 예전 형식이면 `install-hook.ps1`를 실행한다. (수동으로 `install-hook`을 안 돌려도 된다.)
+- 훅 형식을 바꾼 뒤에는 `.cursor/state/obsidian-post-commit.ok`를 지우거나 `post-commit`을 삭제하면 다음 편집 때 다시 맞춘다.
 
 ## Backlink Tips
 - 문서 끝에 `Related Project`, `Related Journals` 섹션을 두고 위키링크를 넣는다.

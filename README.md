@@ -1,6 +1,14 @@
 # lifeNote 모노레포
 
-추천 스택: **NestJS + PostgreSQL(Prisma) + Next.js(App Router) + Expo**.
+## 프로젝트 개요
+
+**lifeNote**는 일상을 한곳에서 다루기 위한 **통합 생활 관리 서비스**를 목표로 하는 프로젝트입니다. 할 일·주간 계획·일기·식비 예산·공지·명언 배너·커뮤니티·통계 등은 **REST API**로 제공하며, **일반 사용자 기능의 UI는 모바일(Expo) 등 클라이언트**에서 소비하는 것을 전제로 합니다. **웹(Next.js)** 은 **관리자 운영 콘솔**과 **Google 로그인·OAuth 콜백** 중심으로 두었습니다.
+
+요구사항·API 계약·디자인 기준은 `docs/requirements/`, `docs/design/` 를 참고합니다.
+
+## 기술 스택
+
+추천 조합: **NestJS + PostgreSQL(Prisma) + Next.js(App Router) + Expo**.
 
 ## Quick Start (실행/테스트)
 
@@ -19,15 +27,10 @@ npm run dev:api
 npm run dev:web
 ```
 
-- 메인: `http://localhost:3000`
-- 사용자 홈 화면: `http://localhost:3000/`
-- 사용자 할 일 화면: `http://localhost:3000/todos`
-- 사용자 식비 화면: `http://localhost:3000/budget`
-- 사용자 계획 화면: `http://localhost:3000/plan`
-- 사용자 일기 화면: `http://localhost:3000/diary`
-- 사용자 커뮤니티 화면: `http://localhost:3000/community`
-- 사용자 통계 화면: `http://localhost:3000/stats`
-- 관리자 연동 화면: `http://localhost:3000/admin`
+- 랜딩(관리자 진입 안내): `http://localhost:3000/`
+- 관리자 콘솔: `http://localhost:3000/admin`
+- 로그인: `http://localhost:3000/login`
+- OAuth 콜백: `http://localhost:3000/auth/callback`
 
 웹에서 API 연동 확인 시 `apps/web/.env.local`(예시는 `apps/web/.env.example`):
 
@@ -46,12 +49,9 @@ npm run dev:mobile
 - iOS 시뮬레이터/웹: `http://localhost:4000`
 - 실기기: `http://<내PC_로컬IP>:4000`
 
-### 4) 로그인/인증 화면
+### 4) 모바일에서 토큰으로 API 테스트
 
-- 웹 로그인: `http://localhost:3000/login`
-- OAuth 콜백: `http://localhost:3000/auth/callback`
-- 웹은 로그인 후 세션(localStorage) 기반으로 API를 호출합니다.
-- 모바일은 앱 내 Access Token 입력 후 테스트합니다.
+- 모바일은 앱 내 **Access Token** 입력 후 API를 호출합니다(웹과 동일 백엔드).
 
 ## 사전 요구
 
@@ -73,8 +73,8 @@ npm install
 | API | `npm run dev:api` | 기본 `http://localhost:4000`, 경로 접두사 `/v1` |
 | 웹 | `npm run dev:web` | 기본 `http://localhost:3000` |
 | 앱 | `npm run dev:mobile` | Expo |
-| 웹 통합 E2E(기본) | `npm run e2e -w web` | Playwright 모킹 플로우 |
-| 웹 통합 E2E(실 API) | `E2E_ACCESS_TOKEN=<token> npm run e2e:live -w web` | 실 API 연동 확인 |
+| 웹 통합 E2E(기본) | `npm run e2e -w web` | Playwright(관리자 모킹·인증 시나리오 등) |
+| 웹 E2E(live 라우트) | `npm run e2e:live -w web` | dev 서버 공개 페이지(`/`·`/login`) 스모크(토큰 불필요) |
 
 API 환경 변수 예시는 `apps/api/.env.example`를 참고해 `apps/api/.env`에 복사한다.
 웹 연동 확인 시 `apps/web/.env.local`에 `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000`를 설정한다.
@@ -128,8 +128,8 @@ DB 마이그레이션: `cd apps/api` → `npx prisma migrate deploy` (또는 `mi
 
 ## 연동 화면
 
-- 웹 사용자 홈/기능 화면: `apps/web/src/app/page.tsx` 및 각 기능 라우트(`todos`, `budget`, `plan`, `diary`, `community`, `stats`)
+- 웹 랜딩·로그인·콜백: `apps/web/src/app/page.tsx`, `login/page.tsx`, `auth/callback/page.tsx`
 - 웹 관리자 콘솔: `apps/web/src/app/admin/page.tsx`
-- 모바일 앱 화면: `apps/mobile/App.tsx`
+- 모바일 앱(사용자 기능 UI): `apps/mobile/App.tsx`
 
 요구·계약·디자인 문서는 `docs/requirements/`, `docs/design/`를 본다.
