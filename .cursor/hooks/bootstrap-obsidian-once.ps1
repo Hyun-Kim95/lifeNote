@@ -9,6 +9,26 @@ function Ensure-Directory {
     }
 }
 
+function Write-HookWarning {
+    param(
+        [string]$ProjectRoot,
+        [string]$Message
+    )
+
+    try {
+        $stateDir = Join-Path $ProjectRoot ".cursor\state"
+        if (-not (Test-Path -LiteralPath $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
+        $logPath = Join-Path $stateDir "obsidian-hook-warnings.log"
+        $ts = (Get-Date).ToString("s")
+        Add-Content -LiteralPath $logPath -Value "[$ts] bootstrap-obsidian-once: $Message" -Encoding ASCII
+    }
+    catch {
+        # Logging must remain fail-open.
+    }
+}
+
 try {
     $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
     $stateDir = Join-Path $projectRoot ".cursor\state"
@@ -45,6 +65,13 @@ try {
     exit 0
 }
 catch {
+    try {
+        $safeRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+        Write-HookWarning -ProjectRoot $safeRoot -Message $_.Exception.Message
+    }
+    catch {
+        # no-op
+    }
     # Never block session startup because of bootstrap failures.
     exit 0
 }

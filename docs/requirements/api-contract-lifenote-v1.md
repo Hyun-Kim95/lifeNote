@@ -2,7 +2,7 @@
 type: doc
 project: lifeNote
 doc_lane: requirements
-updated_at: 2026-04-15T00:18:25
+updated_at: 2026-04-16T10:20:00
 tags: [docs, vault-sync]
 ---
 # lifeNote API 계약 v1 (Gate 2)
@@ -204,10 +204,16 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
+| `date` | date | 반복 규칙 평가 기준일(`YYYY-MM-DD`). 미지정 시 서버 오늘 날짜 |
 | `dueOn` | date | 특정 일자 기준 |
 | `status` | enum | `all` \| `open` \| `done` |
 | `cursor` | string | 페이지네이션(커서) |
 | `limit` | int | 기본 50, 최대 100 |
+
+- 서버는 `date`를 기준으로 반복 규칙(`scheduleType`)을 평가해 노출 대상을 계산한다.
+- `dueOn`은 `scheduleType=once`인 단건 일정 필터에 우선 사용하고, 반복 일정은 `date` 기준으로 판정한다.
+- `scheduleType=someday`(언젠가)는 **날짜 조건 없이** `date`가 지정된 목록에도 항상 포함된다.
+- `date` 쿼리가 있을 때 응답 `items`는 **정렬된 배열**이다: 미완료(`done=false`)가 위, 완료가 아래. 미완료는 `dueAt` 오름차순(`dueAt` 없음은 미완료 구간 맨 아래), 동일 시 `createdAt` 오름차순. 완료는 `updatedAt` 내림차순.
 
 **Response 200**
 
@@ -217,7 +223,14 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
     {
       "id": "td_…",
       "title": "PRD 검토",
+      "scheduleType": "weekly",
+      "startDate": "2026-04-01",
+      "endDate": null,
+      "weekdays": [1, 3, 5],
+      "monthDay": null,
+      "intervalDays": null,
       "dueOn": "2026-04-14",
+      "dueAt": "2026-04-14T02:30:00.000Z",
       "priority": "normal",
       "done": false,
       "createdAt": "2026-04-13T…Z",
@@ -234,14 +247,38 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 **Body**
 
 ```json
-{ "title": "…", "dueOn": "2026-04-15", "priority": "high" }
+{
+  "title": "…",
+  "priority": "high",
+  "scheduleType": "once",
+  "dueOn": "2026-04-15",
+  "startDate": "2026-04-15",
+  "dueAt": "2026-04-15T05:30:00.000Z"
+}
 ```
+
+- `dueAt`(선택): ISO 8601. `once`에서 시각을 두면 정렬·표시에 사용. 생략 시 서버가 날짜만으로 `dueAt`을 채울 수 있다.
+- `scheduleType: "someday"`인 경우 `dueOn`/`startDate`/`dueAt`을 보내지 않는다.
 
 ### 5.3 `PATCH /v1/todos/{id}`
 
-`title`, `dueOn`, `priority`, `done` 부분 갱신.
+`title`, `priority`, `done`, `scheduleType`, `dueOn`, `dueAt`, `startDate`, `endDate`, `weekdays`, `monthDay`, `intervalDays` 부분 갱신.
 
-### 5.4 `DELETE /v1/todos/{id}`
+### 5.4 반복 타입/필드 규칙 요약
+
+| `scheduleType` | 필수 필드 | 선택 필드 | 규칙 |
+|----------------|-----------|-----------|------|
+| `once` | `startDate`(또는 `dueOn`/`dueAt`에서 유도) | `dueOn`, `dueAt` | 단일 날짜 일정. `dueAt`이 있으면 정렬·시각 표시에 사용(ISO 8601). 날짜만이면 해당일 00:00 UTC로 저장될 수 있음 |
+| `daily` | - | `startDate`, `endDate` | 시작일부터 매일 노출. `endDate` 있으면 포함 범위 종료 |
+| `weekly` | `weekdays` | `startDate`, `endDate` | `weekdays`는 1(월)~7(일) 배열 |
+| `monthly` | `monthDay` | `startDate`, `endDate` | `monthDay` 1~31 |
+| `interval` | `startDate`, `intervalDays` | `endDate` | `intervalDays`는 1 이상 정수 |
+| `someday` | - | - | 날짜·`dueAt` 없음. `someday`에는 `dueAt`을 둘 수 없음 |
+
+- `scheduleType=once`에서는 **날짜**가 반드시 필요하며(`startDate`/`dueOn`/`dueAt` 중 서버가 유도 가능한 값), null 요청은 `VALIDATION_ERROR`로 차단한다.
+- 하위 호환을 위해 `dueOn`은 단일 일정 표현 필드로 병행 유지한다.
+
+### 5.5 `DELETE /v1/todos/{id}`
 
 **204** No Content.
 

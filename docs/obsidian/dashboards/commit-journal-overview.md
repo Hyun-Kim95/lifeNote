@@ -1,7 +1,7 @@
 # Commit Journal Overview
 
 ```dataview
-TABLE project, commit_short, author, committed_at, file.link AS journal
+TABLE default(display_name, project) AS name, project AS slug, commit_short, author, committed_at, file.link AS journal
 FROM ""
 WHERE type = "commit-journal"
 SORT committed_at DESC

@@ -1,10 +1,3 @@
----
-type: doc
-project: lifeNote
-doc_lane: requirements
-updated_at: 2026-04-14T13:37:28
-tags: [docs, vault-sync]
----
 # requirements
 
 이 폴더는 요구사항 정리 문서를 저장한다.
@@ -20,13 +13,3 @@ tags: [docs, vault-sync]
 - feature-user-management.md
 - admin-board-requirements.md
 - mobile-app-navigation.md
-
-현재 저장소:
-- `prd-lifenote-integrated-app.md` — 제품 PRD
-- `api-contract-lifenote-v1.md` — **Gate 2** REST API 계약(v1)
-
-## Vault
-
-- [[lifeNote/docs/_project-doc-index|Hub]]
-- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

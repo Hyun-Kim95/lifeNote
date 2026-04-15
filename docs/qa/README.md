@@ -1,10 +1,3 @@
----
-type: doc
-project: lifeNote
-doc_lane: qa
-updated_at: 2026-04-15T00:19:04
-tags: [docs, vault-sync]
----
 # qa
 
 이 폴더는 QA 체크리스트와 검증 메모를 저장한다.
@@ -23,10 +16,3 @@ tags: [docs, vault-sync]
 - release-checklist.md
 - admin-table-qa.md
 - stage3-entry-checklist.md
-
-관리자 화면 **자동 증빙 이미지**(Playwright)는 `evidence/` 를 참고한다. 생성: `npm run e2e:evidence -w web`.
-## Vault
-
-- [[lifeNote/docs/_project-doc-index|Hub]]
-- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

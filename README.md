@@ -49,9 +49,11 @@ npm run dev:mobile
 - iOS 시뮬레이터/웹: `http://localhost:4000`
 - 실기기: `http://<내PC_로컬IP>:4000`
 
-### 4) 모바일에서 토큰으로 API 테스트
+### 4) 모바일 환경 변수·로그인
 
-- 모바일은 앱 내 **Access Token** 입력 후 API를 호출합니다(웹과 동일 백엔드).
+- `apps/mobile/.env.example`을 참고해 `apps/mobile/.env`에 `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 설정합니다(Google Cloud OAuth Web 클라이언트는 API의 `GOOGLE_CLIENT_ID`와 동일 권장).
+- 앱은 **Google 로그인**으로 JWT를 받아 제품 화면(홈·To-do·식비 등)을 사용합니다. **수동 Access Token 입력**은 개발 모드(`__DEV__`)의 개발자 화면에서만 제공합니다.
+- RC·UAT 구분은 `docs/qa/rc-uat-handoff.md`를 참고합니다.
 
 ## 사전 요구
 
@@ -78,7 +80,7 @@ npm install
 
 API 환경 변수 예시는 `apps/api/.env.example`를 참고해 `apps/api/.env`에 복사한다.
 웹 연동 확인 시 `apps/web/.env.local`에 `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000`를 설정한다.
-모바일 연동 확인은 `apps/mobile/App.tsx` 기본값(`http://10.0.2.2:4000`)을 사용하거나, 기기 환경에 맞는 API 주소로 입력해 테스트한다.
+모바일은 `EXPO_PUBLIC_API_BASE_URL`로 백엔드를 지정한다(미설정 시 Android 에뮬레이터용 `http://10.0.2.2:4000`).
 
 ### Prisma `migrate dev` 오류 P3014 (shadow DB)
 

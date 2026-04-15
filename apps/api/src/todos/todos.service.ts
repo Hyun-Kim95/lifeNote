@@ -1,8 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Todo, TodoPriority } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Prisma,
+  Todo,
+  TodoPriority,
+  TodoScheduleType as TodoScheduleTypeDb,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseYmdToUtcDate } from '../common/utils/date-parse';
-import { CreateTodoDto } from './dto/create-todo.dto';
+import {
+  CreateTodoDto,
+  TodoScheduleType,
+} from './dto/create-todo.dto';
 import { ListTodosQueryDto } from './dto/list-todos.query';
 import { PatchTodoDto } from './dto/patch-todo.dto';
 
@@ -18,6 +30,205 @@ const priorityToApi: Record<TodoPriority, string> = {
   HIGH: 'high',
 };
 
+const scheduleTypeToDb: Record<TodoScheduleType, TodoScheduleTypeDb> = {
+  once: 'ONCE',
+  daily: 'DAILY',
+  weekly: 'WEEKLY',
+  monthly: 'MONTHLY',
+  interval: 'INTERVAL',
+  someday: 'SOMEDAY',
+};
+
+const scheduleTypeToApi: Record<TodoScheduleTypeDb, TodoScheduleType> = {
+  ONCE: 'once',
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly',
+  INTERVAL: 'interval',
+  SOMEDAY: 'someday',
+};
+
+type ScheduleRuleInput = {
+  scheduleType: TodoScheduleType;
+  startDate: string | null;
+  endDate: string | null;
+  weekdays: number[];
+  monthDay: number | null;
+  intervalDays: number | null;
+};
+
+function ymd(date: Date | null): string | null {
+  return date ? date.toISOString().slice(0, 10) : null;
+}
+
+function utcWeekdayMondayOneBased(date: Date): number {
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
+function daysBetweenUtc(from: Date, to: Date): number {
+  const ms = to.getTime() - from.getTime();
+  return Math.floor(ms / 86_400_000);
+}
+
+function parseDueAtIso(raw: string): Date {
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: 'dueAt은 유효한 ISO 8601 날짜·시각이어야 합니다.',
+    });
+  }
+  return d;
+}
+
+function assertScheduleRuleInput(input: ScheduleRuleInput): void {
+  if (input.scheduleType === 'someday') {
+    return;
+  }
+  if (input.startDate && input.endDate) {
+    const start = parseYmdToUtcDate(input.startDate);
+    const end = parseYmdToUtcDate(input.endDate);
+    if (start.getTime() > end.getTime()) {
+      throw new BadRequestException({
+        code: 'INVALID_TODO_SCHEDULE',
+        message: 'startDate는 endDate보다 늦을 수 없습니다.',
+      });
+    }
+  }
+
+  if (input.scheduleType === 'weekly' && input.weekdays.length === 0) {
+    throw new BadRequestException({
+      code: 'INVALID_TODO_SCHEDULE',
+      message: 'weekly 반복에는 weekdays가 필요합니다.',
+    });
+  }
+  if (input.scheduleType === 'once' && !input.startDate) {
+    throw new BadRequestException({
+      code: 'INVALID_TODO_SCHEDULE',
+      message: 'once 일정에는 날짜(startDate/dueOn/dueAt)가 필요합니다.',
+    });
+  }
+  if (input.scheduleType === 'monthly' && !input.monthDay) {
+    throw new BadRequestException({
+      code: 'INVALID_TODO_SCHEDULE',
+      message: 'monthly 반복에는 monthDay가 필요합니다.',
+    });
+  }
+  if (
+    input.scheduleType === 'interval' &&
+    (!input.intervalDays || !input.startDate)
+  ) {
+    throw new BadRequestException({
+      code: 'INVALID_TODO_SCHEDULE',
+      message: 'interval 반복에는 startDate와 intervalDays가 필요합니다.',
+    });
+  }
+}
+
+function normalizeScheduleRuleInput(input: ScheduleRuleInput): ScheduleRuleInput {
+  const normalized: ScheduleRuleInput = {
+    scheduleType: input.scheduleType,
+    startDate: input.startDate,
+    endDate: input.endDate,
+    weekdays: input.weekdays,
+    monthDay: input.monthDay,
+    intervalDays: input.intervalDays,
+  };
+
+  if (normalized.scheduleType === 'someday') {
+    normalized.startDate = null;
+    normalized.endDate = null;
+    normalized.weekdays = [];
+    normalized.monthDay = null;
+    normalized.intervalDays = null;
+    return normalized;
+  }
+
+  if (normalized.scheduleType !== 'weekly') {
+    normalized.weekdays = [];
+  }
+  if (normalized.scheduleType !== 'monthly') {
+    normalized.monthDay = null;
+  }
+  if (normalized.scheduleType !== 'interval') {
+    normalized.intervalDays = null;
+  }
+
+  return normalized;
+}
+
+function isTodoScheduledOnDate(todo: Todo, targetDate: Date): boolean {
+  const start = todo.startDate;
+  const end = todo.endDate;
+  if (start && targetDate.getTime() < start.getTime()) {
+    return false;
+  }
+  if (end && targetDate.getTime() > end.getTime()) {
+    return false;
+  }
+
+  switch (todo.scheduleType) {
+    case 'SOMEDAY':
+      return true;
+    case 'ONCE': {
+      const base = todo.startDate ?? todo.dueOn;
+      if (!base) {
+        return false;
+      }
+      return base.getTime() === targetDate.getTime();
+    }
+    case 'DAILY':
+      return true;
+    case 'WEEKLY': {
+      const weekday = utcWeekdayMondayOneBased(targetDate);
+      return todo.weekdays.includes(weekday);
+    }
+    case 'MONTHLY':
+      return todo.monthDay === targetDate.getUTCDate();
+    case 'INTERVAL': {
+      if (!todo.startDate || !todo.intervalDays || todo.intervalDays <= 0) {
+        return false;
+      }
+      const diff = daysBetweenUtc(todo.startDate, targetDate);
+      return diff >= 0 && diff % todo.intervalDays === 0;
+    }
+    default:
+      return false;
+  }
+}
+
+/** 미완료: 이른 dueAt 우선(dueAt 없음은 맨 아래)·같은 시각(또는 둘 다 없음)이면 우선순위 높은 것 먼저. 완료는 하단·updatedAt 최신 우선 */
+const prioritySortRank: Record<TodoPriority, number> = {
+  HIGH: 0,
+  NORMAL: 1,
+  LOW: 2,
+};
+
+function sortTodosForDisplay(a: Todo, b: Todo): number {
+  if (a.done !== b.done) {
+    return a.done ? 1 : -1;
+  }
+  if (!a.done && !b.done) {
+    const at = a.dueAt?.getTime() ?? Number.POSITIVE_INFINITY;
+    const bt = b.dueAt?.getTime() ?? Number.POSITIVE_INFINITY;
+    if (at !== bt) {
+      return at - bt;
+    }
+    const pr = prioritySortRank[a.priority] - prioritySortRank[b.priority];
+    if (pr !== 0) {
+      return pr;
+    }
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  }
+  const au = a.updatedAt.getTime();
+  const bu = b.updatedAt.getTime();
+  if (au !== bu) {
+    return bu - au;
+  }
+  return a.id.localeCompare(b.id);
+}
+
 @Injectable()
 export class TodosService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,10 +237,15 @@ export class TodosService {
     return {
       id: t.id,
       title: t.title,
-      dueOn: t.dueOn
-        ? t.dueOn.toISOString().slice(0, 10)
-        : null,
+      dueOn: ymd(t.dueOn),
+      dueAt: t.dueAt ? t.dueAt.toISOString() : null,
       priority: priorityToApi[t.priority],
+      scheduleType: scheduleTypeToApi[t.scheduleType],
+      startDate: ymd(t.startDate),
+      endDate: ymd(t.endDate),
+      weekdays: t.weekdays,
+      monthDay: t.monthDay,
+      intervalDays: t.intervalDays,
       done: t.done,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
@@ -56,6 +272,39 @@ export class TodosService {
   async list(userId: string, q: ListTodosQueryDto) {
     const limit = Math.min(100, Math.max(1, q.limit ?? 50));
     const whereBase = this.buildFilter(userId, q);
+    const targetDate = q.date ? parseYmdToUtcDate(q.date) : null;
+
+    if (targetDate) {
+      const allRows = await this.prisma.todo.findMany({
+        where: whereBase,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      });
+      const filtered = allRows.filter((todo) =>
+        isTodoScheduledOnDate(todo, targetDate),
+      );
+      filtered.sort(sortTodosForDisplay);
+      const total = filtered.length;
+      const completed = filtered.filter((todo) => todo.done).length;
+
+      let afterCursor = filtered;
+      if (q.cursor) {
+        const cursorIndex = filtered.findIndex((todo) => todo.id === q.cursor);
+        if (cursorIndex >= 0) {
+          afterCursor = filtered.slice(cursorIndex + 1);
+        }
+      }
+
+      const page = afterCursor.slice(0, limit);
+      const hasMore = afterCursor.length > limit;
+      const nextCursor =
+        hasMore && page.length > 0 ? page[page.length - 1].id : null;
+
+      return {
+        items: page.map((t) => this.mapTodo(t)),
+        nextCursor,
+        stats: { completed, total },
+      };
+    }
 
     const [total, completed] = await Promise.all([
       this.prisma.todo.count({ where: whereBase }),
@@ -93,8 +342,9 @@ export class TodosService {
       take: limit + 1,
     });
 
-    const hasMore = rows.length > limit;
-    const page = hasMore ? rows.slice(0, limit) : rows;
+    const sorted = [...rows].sort(sortTodosForDisplay);
+    const hasMore = sorted.length > limit;
+    const page = hasMore ? sorted.slice(0, limit) : sorted;
     const nextCursor =
       hasMore && page.length > 0 ? page[page.length - 1].id : null;
 
@@ -106,14 +356,81 @@ export class TodosService {
   }
 
   async create(userId: string, dto: CreateTodoDto) {
-    const priority =
-      priorityToDb[dto.priority ?? 'normal'] ?? 'NORMAL';
+    const priority = priorityToDb[dto.priority ?? 'normal'] ?? 'NORMAL';
+    const scheduleType = dto.scheduleType ?? 'once';
+    let inferredStart = dto.startDate ?? dto.dueOn ?? null;
+    if (!inferredStart && dto.dueAt) {
+      inferredStart = new Date(dto.dueAt).toISOString().slice(0, 10);
+    }
+    const scheduleInput = normalizeScheduleRuleInput({
+      scheduleType,
+      startDate: inferredStart,
+      endDate: dto.endDate ?? null,
+      weekdays: dto.weekdays ?? [],
+      monthDay: dto.monthDay ?? null,
+      intervalDays: dto.intervalDays ?? null,
+    });
+    assertScheduleRuleInput(scheduleInput);
+
+    if (scheduleInput.scheduleType === 'someday' && dto.dueAt) {
+      throw new BadRequestException({
+        code: 'INVALID_TODO_SCHEDULE',
+        message: '언젠가(someday) 일정에는 시각(dueAt)을 지정할 수 없습니다.',
+      });
+    }
+
+    let dueAtVal: Date | null = null;
+    if (scheduleInput.scheduleType === 'someday') {
+      dueAtVal = null;
+    } else if (dto.dueAt) {
+      if (scheduleInput.scheduleType !== 'once') {
+        throw new BadRequestException({
+          code: 'INVALID_TODO_SCHEDULE',
+          message: 'dueAt은 once(특정 날짜) 일정에서만 사용할 수 있습니다.',
+        });
+      }
+      dueAtVal = parseDueAtIso(dto.dueAt);
+    } else if (scheduleInput.scheduleType === 'once' && scheduleInput.startDate) {
+      dueAtVal = parseYmdToUtcDate(scheduleInput.startDate);
+    }
+
+    let dueOnDate: Date | null = null;
+    let startDateVal: Date | null = null;
+    if (scheduleInput.scheduleType === 'someday') {
+      dueOnDate = null;
+      startDateVal = null;
+    } else if (scheduleInput.scheduleType === 'once') {
+      startDateVal = scheduleInput.startDate
+        ? parseYmdToUtcDate(scheduleInput.startDate)
+        : null;
+      dueOnDate = dto.dueOn ? parseYmdToUtcDate(dto.dueOn) : startDateVal;
+      if (dto.dueAt && dueAtVal) {
+        const slice = dueAtVal.toISOString().slice(0, 10);
+        dueOnDate = parseYmdToUtcDate(slice);
+        startDateVal = dueOnDate;
+      }
+    } else {
+      dueOnDate = dto.dueOn ? parseYmdToUtcDate(dto.dueOn) : null;
+      startDateVal = scheduleInput.startDate
+        ? parseYmdToUtcDate(scheduleInput.startDate)
+        : null;
+    }
+
     const t = await this.prisma.todo.create({
       data: {
         userId,
         title: dto.title,
-        dueOn: dto.dueOn ? parseYmdToUtcDate(dto.dueOn) : null,
+        dueAt: dueAtVal,
+        dueOn: dueOnDate,
         priority,
+        scheduleType: scheduleTypeToDb[scheduleInput.scheduleType],
+        startDate: startDateVal,
+        endDate: scheduleInput.endDate
+          ? parseYmdToUtcDate(scheduleInput.endDate)
+          : null,
+        weekdays: scheduleInput.weekdays,
+        monthDay: scheduleInput.monthDay,
+        intervalDays: scheduleInput.intervalDays,
       },
     });
     return this.mapTodo(t);
@@ -135,14 +452,100 @@ export class TodosService {
       data.title = dto.title;
     }
     if (dto.dueOn !== undefined) {
-      data.dueOn =
-        dto.dueOn === null ? null : parseYmdToUtcDate(dto.dueOn);
+      data.dueOn = dto.dueOn === null ? null : parseYmdToUtcDate(dto.dueOn);
     }
     if (dto.priority !== undefined) {
       data.priority = priorityToDb[dto.priority];
     }
     if (dto.done !== undefined) {
       data.done = dto.done;
+    }
+
+    const hasSchedulePatch =
+      dto.scheduleType !== undefined ||
+      dto.startDate !== undefined ||
+      dto.endDate !== undefined ||
+      dto.weekdays !== undefined ||
+      dto.monthDay !== undefined ||
+      dto.intervalDays !== undefined;
+
+    if (hasSchedulePatch) {
+      const merged = normalizeScheduleRuleInput({
+        scheduleType: dto.scheduleType ?? scheduleTypeToApi[existing.scheduleType],
+        startDate:
+          dto.startDate === undefined ? ymd(existing.startDate) : dto.startDate,
+        endDate: dto.endDate === undefined ? ymd(existing.endDate) : dto.endDate,
+        weekdays:
+          dto.weekdays === undefined ? existing.weekdays : (dto.weekdays ?? []),
+        monthDay: dto.monthDay === undefined ? existing.monthDay : dto.monthDay,
+        intervalDays:
+          dto.intervalDays === undefined
+            ? existing.intervalDays
+            : dto.intervalDays,
+      });
+      assertScheduleRuleInput(merged);
+
+      const nextType = scheduleTypeToDb[merged.scheduleType];
+      data.scheduleType = nextType;
+      data.startDate = merged.startDate ? parseYmdToUtcDate(merged.startDate) : null;
+      data.endDate = merged.endDate ? parseYmdToUtcDate(merged.endDate) : null;
+      data.weekdays = merged.weekdays;
+      data.monthDay = merged.monthDay;
+      data.intervalDays = merged.intervalDays;
+
+      if (merged.scheduleType === 'someday') {
+        data.dueOn = null;
+        data.startDate = null;
+        data.endDate = null;
+        data.dueAt = null;
+      } else if (merged.scheduleType === 'once') {
+        const midnight =
+          merged.startDate != null
+            ? parseYmdToUtcDate(merged.startDate)
+            : null;
+        if (midnight) {
+          data.dueOn = midnight;
+          data.startDate = midnight;
+          if (dto.dueAt === undefined) {
+            const prevY =
+              ymd(existing.startDate) ?? ymd(existing.dueOn) ?? null;
+            if (merged.startDate !== prevY) {
+              data.dueAt = midnight;
+            }
+          }
+        }
+      } else {
+        data.dueAt = null;
+      }
+    }
+
+    if (dto.dueAt !== undefined) {
+      const effectiveSt =
+        (data.scheduleType as TodoScheduleTypeDb | undefined) ??
+        existing.scheduleType;
+      const effectiveApi = scheduleTypeToApi[effectiveSt];
+      if (effectiveApi === 'someday' && dto.dueAt !== null) {
+        throw new BadRequestException({
+          code: 'INVALID_TODO_SCHEDULE',
+          message: '언젠가(someday) 일정에는 시각(dueAt)을 지정할 수 없습니다.',
+        });
+      }
+      if (dto.dueAt === null) {
+        data.dueAt = null;
+      } else {
+        if (effectiveSt !== 'ONCE') {
+          throw new BadRequestException({
+            code: 'INVALID_TODO_SCHEDULE',
+            message: 'dueAt은 once(특정 날짜) 일정에서만 사용할 수 있습니다.',
+          });
+        }
+        const d = parseDueAtIso(dto.dueAt);
+        data.dueAt = d;
+        const slice = d.toISOString().slice(0, 10);
+        const day = parseYmdToUtcDate(slice);
+        data.dueOn = day;
+        data.startDate = day;
+      }
     }
 
     const t = await this.prisma.todo.update({

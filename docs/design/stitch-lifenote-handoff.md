@@ -2,7 +2,7 @@
 type: doc
 project: lifeNote
 doc_lane: design
-updated_at: 2026-04-15T00:39:38
+updated_at: 2026-04-15T12:30:00
 tags: [docs, vault-sync]
 ---
 # Stitch + 자체 목업 이관 기록 — lifeNote (2026-04-14)
@@ -63,8 +63,13 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 | 주간 계획표 | `mock-internal/app-plan.html` | 주간 계획표 | `416c8f8a79864af1a32f6e382e8fc017` |
 | 일기 작성 | `mock-internal/app-diary.html` | 일기 작성 | `969235ea993246fc8e38cd2316b22155` |
 | SNS 로그인 | `mock-internal/app-login.html` | SNS 로그인 (MVP) | `1dd03991f80f4a048030813e9ca33630` |
-| 통계 | `mock-internal/app-stats.html` | (미생성 — 필요 시 Stitch 추가) | — |
-| 커뮤니티 | `mock-internal/app-community.html` | (미생성) | — |
+| 통계 요약 | `mock-internal/app-stats.html` | 통계 요약 | `fa1c858125d3420ca709f1506308081c` |
+| 커뮤니티 피드 | `mock-internal/app-community.html` | 커뮤니티 피드 | `fdeaf95b5c744ec0935877662f5feb98` |
+| 커뮤니티 글·댓글 | `mock-internal/app-community.html` | 커뮤니티 글 상세 및 댓글 | `2aded8ac6cd5460293fdbe3429b7cd0c` |
+| 공지 목록(회원) | — | 공지사항 목록 (회원용) | `9d1a679a811a4755a48aa42f898a2b1d` |
+| 공지 상세(회원) | — | 공지사항 상세 (회원용) | `b1c6883c93ae48c282fd09d0c228eacb` |
+| 더보기 허브 | — | 더보기 메뉴 허브 | `30214a01e5b5460eb3f6caa8647b6891` |
+| 설정·프로필 | — | 설정 및 프로필 | `58d954d20a5b47bd99613d646036ccae` |
 | 관리자 공지 | `mock-internal/admin-notices.html` | 공지사항 관리 목록 | `4d148465ed6c4b66a4ba67c08d3f028b` |
 | 관리자 배너 | `mock-internal/admin-banners.html` | 명언 배너 관리 | `b7e2ef24f90146d78df96bd99221bdda` |
 | 관리자 회원 | `mock-internal/admin-members.html` | 회원 관리 목록 | `d696688a674148239ee542da71d69cb9` |
@@ -75,11 +80,12 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 
 - **1차**: 모바일 홈, 데스크톱 공지, 모바일 To-do.
 - **2차(부족 화면 보강)**: 식비 기록, SNS 로그인, 주간 계획표, 일기 작성, 명언 배너 관리, 회원 관리.
+- **3차(2026-04-15, 모바일 보강)**: 통계 요약(`generate_screen_from_text` 후 `apply_design_system`으로 DS `17014072979125403972` 확정·스크린 ID 갱신), 커뮤니티 피드·글 상세·댓글, 회원 공지 목록·상세, 더보기 메뉴 허브, 설정 및 프로필.
 - 모델: `GEMINI_3_FLASH` (`generate_screen_from_text`).
 
 ## Stitch 후속 제안(에이전트 출력 취합)
 
-- 통계·커뮤니티·다크 모드 전용 화면, 할 일 추가 모달, 공지/배너 등록 폼, 회원 상세 팝업 등 추가 생성 가능.
+- 다크 모드 전용 화면, 할 일 추가 모달, 공지/배너 등록 폼, 회원 상세 팝업 등 추가 생성 가능.
 - 스타일 통일: `apply_design_system` + `get_project`의 `screenInstances`로 대상 지정 후 적용 검토.
 
 ## SOP 체크리스트

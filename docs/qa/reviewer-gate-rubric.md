@@ -1,10 +1,3 @@
----
-type: doc
-project: lifeNote
-doc_lane: qa
-updated_at: 2026-04-14T09:19:33
-tags: [docs, vault-sync]
----
 # 리뷰어 GATE 루브릭 (선택)
 
 `client-project-lifecycle` 단계 4D에서 사용한다. `qa-agent`가 채점·요약하고, 팀 정책에 따라 사용자가 최종 통과를 확인할 수 있다.
@@ -31,8 +24,3 @@ tags: [docs, vault-sync]
 ## 산출
 
 - `docs/qa/` 등에 `reviewer-gate-{날짜 또는 버전}.md` 형태로 점수표·근거·BLOCKER 목록을 남긴다.
-## Vault
-
-- [[lifeNote/docs/_project-doc-index|Hub]]
-- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
-- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]

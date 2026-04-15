@@ -56,12 +56,29 @@ enum TodoPriority {
   HIGH
 }
 
+enum TodoScheduleType {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+  INTERVAL
+  SOMEDAY
+}
+
 model Todo {
   id        String       @id @default(cuid())
   userId    String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
+  /// 단건·정렬용 시각(UTC). 날짜만이면 해당일 00:00 UTC, 언젠가·반복만은 null 가능
+  dueAt     DateTime?    @db.Timestamptz
   dueOn     DateTime?    @db.Date
+  scheduleType TodoScheduleType @default(ONCE)
+  startDate DateTime?    @db.Date
+  endDate   DateTime?    @db.Date
+  weekdays  Int[]          @default([])
+  monthDay  Int?
+  intervalDays Int?
   priority  TodoPriority @default(NORMAL)
   done      Boolean      @default(false)
   createdAt DateTime     @default(now())

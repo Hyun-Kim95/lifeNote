@@ -1,10 +1,14 @@
 param(
     [string]$ConfigPath = "",
-    [string]$VaultRoot = "D:\Obsidian\projects"
+    [string]$VaultRoot = "D:\Obsidian\projects",
+    [ValidateSet("safe", "mirror")]
+    [string]$SyncMode = "safe"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "Resolve-HubIndexStem.ps1")
 
 function Ensure-Directory {
     param([string]$Path)
@@ -13,17 +17,30 @@ function Ensure-Directory {
     }
 }
 
+function Escape-YamlDoubleQuotedValue {
+    param([string]$Text)
+    if ($null -eq $Text) {
+        return ''
+    }
+    $clean = ($Text -replace "`r`n", ' ' -replace "`r", ' ' -replace "`n", ' ')
+    return (($clean -replace '\\', '\\\\') -replace '"', '\"')
+}
+
 function Write-ProjectDocIndex {
     param(
         [string]$TargetDocsRoot,
         [string]$Slug,
-        [string]$RepoPath
+        [string]$RepoPath,
+        [string]$DisplayName = "",
+        [string]$HubFileStem = ""
     )
 
     $updatedAt = (Get-Date).ToString("s")
     $safeRepoPath = $RepoPath.Replace("\", "\\")
-    $indexPath = Join-Path $TargetDocsRoot "_project-doc-index.md"
+    $hubStem = Get-HubIndexStem -Slug $Slug -DisplayName $DisplayName -HubFileStem $HubFileStem
+    $indexPath = Join-Path $TargetDocsRoot ($hubStem + ".md")
     $readmePath = Join-Path $TargetDocsRoot "README.md"
+    $hubTitle = if (-not [string]::IsNullOrWhiteSpace($DisplayName)) { $DisplayName } else { $Slug }
 
     $dashProjects = "$Slug/docs/obsidian/dashboards/projects-overview"
     $dashJournal = "$Slug/docs/obsidian/dashboards/commit-journal-overview"
@@ -38,26 +55,30 @@ function Write-ProjectDocIndex {
         $links += "- '[[" + $Slug + "/docs/README]]'"
     }
 
-    $content = @(
-        "---"
-        "type: project-doc"
-        "project: $Slug"
-        "source_repo: $Slug"
-        "source_repo_path: $safeRepoPath"
-        "updated_at: $updatedAt"
-        "tags: [project-doc, vault-sync, hub]"
-        "links:"
-    )
+    $content = New-Object System.Collections.Generic.List[string]
+    $null = $content.Add('---')
+    $null = $content.Add('type: project-doc')
+    $null = $content.Add('hub: true')
+    $null = $content.Add("project: $Slug")
+    if (-not [string]::IsNullOrWhiteSpace($DisplayName)) {
+        $dq = Escape-YamlDoubleQuotedValue -Text $DisplayName
+        $null = $content.Add('display_name: "' + $dq + '"')
+    }
+    $null = $content.Add("source_repo: $Slug")
+    $null = $content.Add("source_repo_path: $safeRepoPath")
+    $null = $content.Add("updated_at: $updatedAt")
+    $null = $content.Add('tags: [project-doc, vault-sync, hub]')
+    $null = $content.Add('links:')
 
     foreach ($link in $links) {
-        $content += $link
+        $null = $content.Add($link)
     }
 
     # Avoid `[[...]]` inside double-quoted literals (PowerShell type-parser); build lines with concatenation.
     $body = New-Object System.Collections.Generic.List[string]
     $null = $body.Add('---')
     $null = $body.Add('')
-    $null = $body.Add("# $Slug - project docs hub (vault sync)")
+    $null = $body.Add("# $hubTitle - project docs hub (vault sync)")
     $null = $body.Add('')
     $null = $body.Add('Synced `docs` from the repo into this vault folder. Use dashboards below for Dataview.')
     $null = $body.Add('')
@@ -79,10 +100,15 @@ function Write-ProjectDocIndex {
     $null = $body.Add("- Last synced: $updatedAt")
 
     foreach ($line in $body) {
-        $content += $line
+        $null = $content.Add($line)
     }
 
     Set-Content -LiteralPath $indexPath -Value ($content -join "`r`n") -Encoding UTF8
+
+    $legacyHub = Join-Path $TargetDocsRoot "_project-doc-index.md"
+    if ($hubStem -ne '_project-doc-index' -and (Test-Path -LiteralPath $legacyHub)) {
+        Remove-Item -LiteralPath $legacyHub -Force
+    }
 }
 
 function Resolve-DocsPaths {
@@ -95,6 +121,25 @@ function Resolve-DocsPaths {
     }
 
     return $DocsPaths
+}
+
+function Resolve-SyncMode {
+    param(
+        [string]$Candidate,
+        [string]$Fallback = "safe"
+    )
+
+    $value = if ($null -eq $Candidate) { "" } else { $Candidate.Trim().ToLowerInvariant() }
+    if ($value -eq "safe" -or $value -eq "mirror") {
+        return $value
+    }
+
+    $fallbackValue = if ($null -eq $Fallback) { "safe" } else { $Fallback.Trim().ToLowerInvariant() }
+    if ($fallbackValue -eq "safe" -or $fallbackValue -eq "mirror") {
+        return $fallbackValue
+    }
+
+    return "safe"
 }
 
 function Resolve-GitRepoRoot {
@@ -115,13 +160,16 @@ function Resolve-GitRepoRoot {
 function Ensure-ObsidianIngestConfig {
     param(
         [string]$RepoPath,
-        [string]$DefaultVaultRoot = "D:\Obsidian\projects"
+        [string]$DefaultVaultRoot = "D:\Obsidian\projects",
+        [string]$DefaultSyncMode = "safe"
     )
 
     $ingestPath = Join-Path $RepoPath ".obsidian-ingest.json"
     $folderSlug = Split-Path -Path $RepoPath -Leaf
     $vaultRoot = $DefaultVaultRoot
     $docsPaths = @("docs")
+    $syncMode = Resolve-SyncMode -Candidate $DefaultSyncMode -Fallback "safe"
+    $lockSlug = $false
     $cfg = $null
     $hadReadableFile = $false
 
@@ -145,13 +193,21 @@ function Ensure-ObsidianIngestConfig {
         if ($cfg.docsPaths -and @($cfg.docsPaths).Count -gt 0) {
             $docsPaths = @($cfg.docsPaths | ForEach-Object { [string]$_ })
         }
+        $syncProp = $cfg.PSObject.Properties['syncMode']
+        if ($null -ne $syncProp -and -not [string]::IsNullOrWhiteSpace([string]$syncProp.Value)) {
+            $syncMode = Resolve-SyncMode -Candidate ([string]$syncProp.Value) -Fallback $syncMode
+        }
+        $lockProp = $cfg.PSObject.Properties['lockSlug']
+        if ($null -ne $lockProp -and $null -ne $lockProp.Value) {
+            $lockSlug = [bool]$lockProp.Value
+        }
     }
 
     $slug = $folderSlug
     $mustWrite = -not $hadReadableFile
     if ($hadReadableFile -and $null -ne $cfg) {
         $existingSlug = [string]$cfg.slug
-        if ($existingSlug -ne $folderSlug) {
+        if (-not $lockSlug -and $existingSlug -ne $folderSlug) {
             $mustWrite = $true
         }
     }
@@ -162,25 +218,30 @@ function Ensure-ObsidianIngestConfig {
 
     $out = [pscustomobject]@{
         slug       = $slug
+        lockSlug   = $lockSlug
         vaultRoot  = $vaultRoot
         docsPaths  = $docsPaths
+        syncMode   = $syncMode
     }
     $json = $out | ConvertTo-Json -Depth 6
     Set-Content -LiteralPath $ingestPath -Value $json -Encoding utf8
-    Write-Host "Wrote or repaired: $ingestPath (slug=$slug)"
+    Write-Host "Wrote or repaired: $ingestPath (slug=$slug, lockSlug=$lockSlug, syncMode=$syncMode)"
 }
 
 function Get-AutoRepositoryEntry {
     $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
     $repoPath = Resolve-GitRepoRoot -FallbackPath $projectRoot
-    Ensure-ObsidianIngestConfig -RepoPath $repoPath
+    Ensure-ObsidianIngestConfig -RepoPath $repoPath -DefaultSyncMode $script:SyncMode
 
     $slug = Split-Path -Path $repoPath -Leaf
     $docsPaths = @("docs")
+    $repoSyncMode = Resolve-SyncMode -Candidate $script:SyncMode -Fallback "safe"
 
+    $displayName = ""
+    $hubFileStem = ""
     $ingestConfigPath = Join-Path $repoPath ".obsidian-ingest.json"
     if (Test-Path -LiteralPath $ingestConfigPath) {
-        $repoConfig = Get-Content -LiteralPath $ingestConfigPath -Raw | ConvertFrom-Json
+        $repoConfig = Get-Content -LiteralPath $ingestConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($repoConfig.slug) {
             $slug = [string]$repoConfig.slug
         }
@@ -190,12 +251,27 @@ function Get-AutoRepositoryEntry {
         if ($repoConfig.docsPaths -and $repoConfig.docsPaths.Count -gt 0) {
             $docsPaths = @($repoConfig.docsPaths)
         }
+        $smProp = $repoConfig.PSObject.Properties['syncMode']
+        if ($null -ne $smProp -and -not [string]::IsNullOrWhiteSpace([string]$smProp.Value)) {
+            $repoSyncMode = Resolve-SyncMode -Candidate ([string]$smProp.Value) -Fallback $repoSyncMode
+        }
+        $dnProp = $repoConfig.PSObject.Properties['displayName']
+        if ($null -ne $dnProp -and -not [string]::IsNullOrWhiteSpace([string]$dnProp.Value)) {
+            $displayName = [string]$dnProp.Value
+        }
+        $hfProp = $repoConfig.PSObject.Properties['hubFileStem']
+        if ($null -ne $hfProp -and -not [string]::IsNullOrWhiteSpace([string]$hfProp.Value)) {
+            $hubFileStem = [string]$hfProp.Value
+        }
     }
 
     return @([pscustomobject]@{
-        path = $repoPath
-        slug = $slug
-        docsPaths = $docsPaths
+        path         = $repoPath
+        slug         = $slug
+        docsPaths    = $docsPaths
+        syncMode     = $repoSyncMode
+        displayName  = $displayName
+        hubFileStem  = $hubFileStem
     })
 }
 
@@ -226,6 +302,17 @@ foreach ($repo in $repositories) {
     $repoPath = [string]$repo.path
     $slug = [string]$repo.slug
     $docsPaths = Resolve-DocsPaths -DocsPaths $repo.docsPaths
+    $repoSyncMode = Resolve-SyncMode -Candidate ([string]$repo.syncMode) -Fallback $SyncMode
+    $displayName = ""
+    $repoDn = $repo.PSObject.Properties['displayName']
+    if ($null -ne $repoDn -and -not [string]::IsNullOrWhiteSpace([string]$repoDn.Value)) {
+        $displayName = [string]$repoDn.Value
+    }
+    $hubFileStem = ""
+    $hfRepo = $repo.PSObject.Properties['hubFileStem']
+    if ($null -ne $hfRepo -and -not [string]::IsNullOrWhiteSpace([string]$hfRepo.Value)) {
+        $hubFileStem = [string]$hfRepo.Value
+    }
 
     if (-not (Test-Path -LiteralPath $repoPath)) {
         Write-Warning "Repo path not found, skipping: $repoPath"
@@ -263,17 +350,24 @@ foreach ($repo in $repositories) {
 
         Ensure-Directory -Path $targetPath
 
-        # /MIR keeps destination in sync with source for the selected docs folder.
-        robocopy $sourcePath $targetPath /MIR /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+        $robocopyOptions = @('/R:1', '/W:1', '/NFL', '/NDL', '/NJH', '/NJS', '/NP')
+        if ($repoSyncMode -eq 'mirror') {
+            # mirror: destination entries not present in source are deleted.
+            $robocopyOptions = @('/MIR') + $robocopyOptions
+        } else {
+            # safe: copy recursively without deleting destination-only files.
+            $robocopyOptions = @('/E') + $robocopyOptions
+        }
+        robocopy $sourcePath $targetPath @robocopyOptions | Out-Null
         $exitCode = $LASTEXITCODE
         if ($exitCode -ge 8) {
             throw "robocopy failed for '$sourcePath' -> '$targetPath' (exit code: $exitCode)"
         }
 
-        Write-Host "Synced: $sourcePath -> $targetPath"
+        Write-Host "Synced($repoSyncMode): $sourcePath -> $targetPath"
     }
 
-    Write-ProjectDocIndex -TargetDocsRoot $targetDocsRoot -Slug $slug -RepoPath $repoPath
+    Write-ProjectDocIndex -TargetDocsRoot $targetDocsRoot -Slug $slug -RepoPath $repoPath -DisplayName $displayName -HubFileStem $hubFileStem
     Write-Host "Indexed: $targetDocsRoot"
 }
 

@@ -11,11 +11,15 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+. (Join-Path $PSScriptRoot "Resolve-HubIndexStem.ps1")
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 }
 
 $slug = Split-Path -Path $RepoRoot -Leaf
+$displayName = ""
+$hubFileStem = ""
 $ingestPath = Join-Path $RepoRoot ".obsidian-ingest.json"
 if (Test-Path -LiteralPath $ingestPath) {
     try {
@@ -23,9 +27,28 @@ if (Test-Path -LiteralPath $ingestPath) {
         if ($ingest.slug) {
             $slug = [string]$ingest.slug
         }
+        $dnProp = $ingest.PSObject.Properties['displayName']
+        if ($null -ne $dnProp -and -not [string]::IsNullOrWhiteSpace([string]$dnProp.Value)) {
+            $displayName = [string]$dnProp.Value
+        }
+        $hfProp = $ingest.PSObject.Properties['hubFileStem']
+        if ($null -ne $hfProp -and -not [string]::IsNullOrWhiteSpace([string]$hfProp.Value)) {
+            $hubFileStem = [string]$hfProp.Value
+        }
     } catch {
         # keep folder slug
     }
+}
+
+$hubStem = Get-HubIndexStem -Slug $slug -DisplayName $displayName -HubFileStem $hubFileStem
+
+function Escape-YamlDoubleQuotedValue {
+    param([string]$Text)
+    if ($null -eq $Text) {
+        return ''
+    }
+    $clean = ($Text -replace "`r`n", ' ' -replace "`r", ' ' -replace "`n", ' ')
+    return (($clean -replace '\\', '\\\\') -replace '"', '\"')
 }
 
 $lanes = @("requirements", "qa", "design", "decisions", "changelog")
@@ -59,16 +82,20 @@ foreach ($lane in $lanes) {
         }
 
         $updatedAt = $_.LastWriteTime.ToString("s")
-        $header = @"
----
-type: doc
-project: $slug
-doc_lane: $lane
-updated_at: $updatedAt
-tags: [docs, vault-sync]
----
-
-"@
+        $headerLines = New-Object System.Collections.Generic.List[string]
+        $null = $headerLines.Add('---')
+        $null = $headerLines.Add('type: doc')
+        $null = $headerLines.Add("project: $slug")
+        if (-not [string]::IsNullOrWhiteSpace($displayName)) {
+            $dq = Escape-YamlDoubleQuotedValue -Text $displayName
+            $null = $headerLines.Add('display_name: "' + $dq + '"')
+        }
+        $null = $headerLines.Add("doc_lane: $lane")
+        $null = $headerLines.Add("updated_at: $updatedAt")
+        $null = $headerLines.Add('tags: [docs, vault-sync]')
+        $null = $headerLines.Add('---')
+        $null = $headerLines.Add('')
+        $header = ($headerLines -join "`n") + "`n"
 
         $body = $raw.TrimEnd()
         # ASCII-only display text (Windows PowerShell 5.1 script encoding + Set-Content can mangle Korean).
@@ -76,7 +103,7 @@ tags: [docs, vault-sync]
 
 ## Vault
 
-- [[$slug/docs/_project-doc-index|Hub]]
+- [[$slug/docs/$hubStem|Hub]]
 - [[$slug/docs/obsidian/dashboards/projects-overview|Dashboards]]
 - [[$slug/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]
 "@

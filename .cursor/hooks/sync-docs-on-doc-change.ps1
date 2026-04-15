@@ -1,6 +1,7 @@
 #!/usr/bin/env pwsh
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$cooldownSeconds = 15
 
 function Get-AllStringValues {
     param([object]$Node)
@@ -42,6 +43,26 @@ function Get-AllStringValues {
     return $values
 }
 
+function Write-HookWarning {
+    param(
+        [string]$ProjectRoot,
+        [string]$Message
+    )
+
+    try {
+        $stateDir = Join-Path $ProjectRoot ".cursor\state"
+        if (-not (Test-Path -LiteralPath $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
+        $logPath = Join-Path $stateDir "obsidian-hook-warnings.log"
+        $ts = (Get-Date).ToString("s")
+        Add-Content -LiteralPath $logPath -Value "[$ts] sync-docs-on-doc-change: $Message" -Encoding ASCII
+    }
+    catch {
+        # Logging must never block editing flow.
+    }
+}
+
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) {
@@ -71,10 +92,39 @@ try {
         exit 0
     }
 
+    $stateDir = Join-Path $projectRoot ".cursor\state"
+    $cooldownMarker = Join-Path $stateDir "obsidian-sync-docs.last-run"
+    if (Test-Path -LiteralPath $cooldownMarker) {
+        try {
+            $lastRunRaw = (Get-Content -LiteralPath $cooldownMarker -Raw).Trim()
+            if (-not [string]::IsNullOrWhiteSpace($lastRunRaw)) {
+                $lastRun = [datetime]::Parse($lastRunRaw)
+                $elapsed = (Get-Date) - $lastRun
+                if ($elapsed.TotalSeconds -lt $cooldownSeconds) {
+                    exit 0
+                }
+            }
+        }
+        catch {
+            Write-HookWarning -ProjectRoot $projectRoot -Message "Failed to parse cooldown marker: $cooldownMarker"
+        }
+    }
+
     powershell -NoProfile -ExecutionPolicy Bypass -File $syncScript | Out-Null
+    if (-not (Test-Path -LiteralPath $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+    Set-Content -LiteralPath $cooldownMarker -Value ((Get-Date).ToString("o")) -Encoding ASCII
     exit 0
 }
 catch {
+    try {
+        $safeRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+        Write-HookWarning -ProjectRoot $safeRoot -Message $_.Exception.Message
+    }
+    catch {
+        # no-op
+    }
     # Hook failures should never block normal editing.
     exit 0
 }

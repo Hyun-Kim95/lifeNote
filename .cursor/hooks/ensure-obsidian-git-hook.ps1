@@ -4,6 +4,26 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Write-HookWarning {
+    param(
+        [string]$ProjectRoot,
+        [string]$Message
+    )
+
+    try {
+        $stateDir = Join-Path $ProjectRoot ".cursor\state"
+        if (-not (Test-Path -LiteralPath $stateDir)) {
+            New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        }
+        $logPath = Join-Path $stateDir "obsidian-hook-warnings.log"
+        $ts = (Get-Date).ToString("s")
+        Add-Content -LiteralPath $logPath -Value "[$ts] ensure-obsidian-git-hook: $Message" -Encoding ASCII
+    }
+    catch {
+        # Logging must remain fail-open.
+    }
+}
+
 try {
     $null = [Console]::In.ReadToEnd()
 
@@ -50,5 +70,12 @@ try {
     exit 0
 }
 catch {
+    try {
+        $safeRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+        Write-HookWarning -ProjectRoot $safeRoot -Message $_.Exception.Message
+    }
+    catch {
+        # no-op
+    }
     exit 0
 }

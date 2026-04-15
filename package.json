@@ -4,12 +4,24 @@
   "workspaces": [
     "apps/*"
   ],
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
   "scripts": {
     "dev:api": "npm run start:dev -w api",
     "dev:web": "npm run dev -w web",
     "dev:mobile": "npm run start -w mobile",
     "build:api": "npm run build -w api",
     "build:web": "npm run build -w web",
-    "build": "npm run build:api && npm run build:web"
+    "build": "npm run build:api && npm run build:web",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

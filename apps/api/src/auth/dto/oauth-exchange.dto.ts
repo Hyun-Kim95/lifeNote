@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsString, IsUrl } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class OAuthExchangeDto {
   @IsIn(['google'])
@@ -10,4 +10,9 @@ export class OAuthExchangeDto {
 
   @IsUrl({ require_protocol: true, require_tld: false })
   redirectUri: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  codeVerifier?: string;
 }

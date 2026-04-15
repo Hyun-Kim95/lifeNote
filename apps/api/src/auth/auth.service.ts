@@ -12,6 +12,20 @@ import { OAuthExchangeDto } from './dto/oauth-exchange.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UsersService } from '../users/users.service';
 
+function getGoogleOAuthErrorMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  const e = error as {
+    message?: string;
+    response?: { data?: { error?: string; error_description?: string } };
+  };
+  const desc = e.response?.data?.error_description;
+  const code = e.response?.data?.error;
+  if (desc) return desc;
+  if (code) return code;
+  if (typeof e.message === 'string' && e.message.trim()) return e.message;
+  return undefined;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -38,7 +52,11 @@ export class AuthService {
     let name: string | undefined;
 
     try {
-      const { tokens } = await oauth2.getToken(dto.authorizationCode);
+      const { tokens } = await oauth2.getToken({
+        code: dto.authorizationCode,
+        redirect_uri: dto.redirectUri,
+        ...(dto.codeVerifier ? { codeVerifier: dto.codeVerifier } : {}),
+      });
       oauth2.setCredentials(tokens);
 
       if (tokens.id_token) {
@@ -93,9 +111,10 @@ export class AuthService {
       if (e instanceof UnauthorizedException || e instanceof ConflictException) {
         throw e;
       }
+      const detail = getGoogleOAuthErrorMessage(e);
       throw new UnauthorizedException({
         code: 'UNAUTHENTICATED',
-        message: 'Google 인증에 실패했습니다.',
+        message: detail ? `Google 인증에 실패했습니다. (${detail})` : 'Google 인증에 실패했습니다.',
       });
     }
 

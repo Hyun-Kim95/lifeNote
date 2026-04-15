@@ -11,7 +11,7 @@ LIMIT 30
 ## Journals for Recent 7 Days
 
 ```dataview
-TABLE project, commit_short, committed_at, file.link AS journal
+TABLE default(display_name, project) AS name, project AS slug, commit_short, committed_at, file.link AS journal
 FROM ""
 WHERE type = "commit-journal" AND date(committed_at) >= date(today) - dur(7 days)
 SORT committed_at DESC
