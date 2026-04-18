@@ -6,6 +6,8 @@ export type TodoScheduleType =
   | 'interval'
   | 'someday';
 
+export type TodoDayPeriodApi = 'all_day' | 'am' | 'pm';
+
 export type Todo = {
   id: string;
   title: string;
@@ -20,6 +22,10 @@ export type Todo = {
   weekdays?: number[];
   monthDay?: number | null;
   intervalDays?: number | null;
+  /** 종일·오전·오후(미지정 null) */
+  dayPeriod?: TodoDayPeriodApi | null;
+  /** 주간 계획 슬롯에서 생성 시 */
+  planSlotId?: string | null;
 };
 
 export const priorityLabel: Record<string, string> = {
@@ -35,6 +41,12 @@ export const scheduleTypeLabel: Record<TodoScheduleType, string> = {
   monthly: '매월',
   interval: '간격',
   someday: '언젠가',
+};
+
+export const dayPeriodLabel: Record<TodoDayPeriodApi, string> = {
+  all_day: '종일',
+  am: '오전',
+  pm: '오후',
 };
 
 const weekdayOptions = [
@@ -74,6 +86,17 @@ export function describeSchedule(todo: Todo): string {
 export function isUtcMidnightDueAt(iso: string | null | undefined): boolean {
   if (!iso) return true;
   return /T00:00:00(.000)?Z$/i.test(iso);
+}
+
+/** 목록 섹션용: 명시 dayPeriod 우선, 없으면 dueAt 시각으로 오전/오후, 그 외 종일 */
+export function todoDisplayDayPeriod(todo: Todo): TodoDayPeriodApi {
+  if (todo.dayPeriod === 'am' || todo.dayPeriod === 'pm') return todo.dayPeriod;
+  if (todo.dayPeriod === 'all_day') return 'all_day';
+  if (todo.dueAt && !isUtcMidnightDueAt(todo.dueAt)) {
+    const h = new Date(todo.dueAt).getHours();
+    return h < 12 ? 'am' : 'pm';
+  }
+  return 'all_day';
 }
 
 export function formatDueAtTimeLocal(iso: string | null | undefined): string | null {

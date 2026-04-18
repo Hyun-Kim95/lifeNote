@@ -11,7 +11,12 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useApi } from '../api/useApi';
-import { isUtcMidnightDueAt, type Todo, type TodoScheduleType } from '../todos/todoModel';
+import {
+  isUtcMidnightDueAt,
+  type Todo,
+  type TodoDayPeriodApi,
+  type TodoScheduleType,
+} from '../todos/todoModel';
 import {
   Card,
   Chip,
@@ -25,6 +30,7 @@ import {
   Title,
 } from './Ui';
 import { useAppTheme } from '../theme/ThemeContext';
+import { firstYmdOfMonth, lastYmdOfMonth, weekSundayYmd } from '../lib/week';
 
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -92,6 +98,7 @@ function buildBody(
   intervalDays: string,
   useOnceTime: boolean,
   onceTimePort: Date,
+  dayPeriod: TodoDayPeriodApi,
 ): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
   if (!title.trim()) {
     return { ok: false, error: '제목을 입력하세요.' };
@@ -117,6 +124,7 @@ function buildBody(
     title: title.trim(),
     priority,
     scheduleType,
+    dayPeriod,
     ...(normalizedEndDate ? { endDate: normalizedEndDate } : {}),
   };
 
@@ -192,6 +200,10 @@ function resetFormFromTodo(t: Todo, todayYmd: string) {
     useOnceTime = true;
     onceTimePort = new Date(t.dueAt);
   }
+  const dayPeriod: TodoDayPeriodApi =
+    t.dayPeriod === 'am' || t.dayPeriod === 'pm' || t.dayPeriod === 'all_day'
+      ? t.dayPeriod
+      : 'all_day';
   return {
     title: t.title,
     priority: t.priority,
@@ -204,19 +216,44 @@ function resetFormFromTodo(t: Todo, todayYmd: string) {
     intervalDays: t.intervalDays != null ? String(t.intervalDays) : '',
     useOnceTime,
     onceTimePort,
+    dayPeriod,
   };
 }
+
+export type TodoPlanSlotDraft = {
+  planSlotId: string;
+  label: string;
+  dayOfWeek: number;
+  weekStart: string;
+};
+
+export type TodoScheduleRangePrefill =
+  | { kind: 'week'; weekStart: string }
+  | { kind: 'month'; yearMonth: string };
 
 export type TodoFormModalProps = {
   visible: boolean;
   mode: 'create' | 'edit';
   todo: Todo | null;
   todayYmd: string;
+  /** 주간 슬롯에서 열 때: 제목·매주·요일·시작일(주의 월요일) 프리필 + 생성 시 planSlotId 전달 */
+  initialPlanSlotDraft?: TodoPlanSlotDraft | null;
+  /** 주별·월별 탭 FAB: 해당 주·달 범위로 일정 프리필 */
+  scheduleRangePrefill?: TodoScheduleRangePrefill | null;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 };
 
-export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved }: TodoFormModalProps) {
+export function TodoFormModal({
+  visible,
+  mode,
+  todo,
+  todayYmd,
+  initialPlanSlotDraft,
+  scheduleRangePrefill,
+  onClose,
+  onSaved,
+}: TodoFormModalProps) {
   const { colors, fonts, spacing, radius, stroke } = useAppTheme();
   const { requestJson } = useApi();
   const [title, setTitle] = useState('');
@@ -230,6 +267,7 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
   const [intervalDays, setIntervalDays] = useState('');
   const [useOnceTime, setUseOnceTime] = useState(false);
   const [onceTimePort, setOnceTimePort] = useState(() => new Date());
+  const [dayPeriod, setDayPeriod] = useState<TodoDayPeriodApi>('all_day');
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [tempPickerDate, setTempPickerDate] = useState(() => new Date());
   const [saving, setSaving] = useState(false);
@@ -247,6 +285,7 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
     setIntervalDays('');
     setUseOnceTime(false);
     setOnceTimePort(new Date());
+    setDayPeriod('all_day');
     setPickerTarget(null);
     setLocalError(null);
   }, [todayYmd]);
@@ -267,10 +306,37 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
       setIntervalDays(f.intervalDays);
       setUseOnceTime(f.useOnceTime);
       setOnceTimePort(f.onceTimePort);
+      setDayPeriod(f.dayPeriod);
+    } else if (mode === 'create' && initialPlanSlotDraft) {
+      setTitle(initialPlanSlotDraft.label);
+      setPriority('normal');
+      setScheduleType('weekly');
+      setWeekdays([initialPlanSlotDraft.dayOfWeek]);
+      setStartDate(initialPlanSlotDraft.weekStart);
+      setEndDate('');
+      setOnceDate(todayYmd);
+      setMonthDay('');
+      setIntervalDays('');
+      setUseOnceTime(false);
+      setOnceTimePort(new Date());
+      setDayPeriod('all_day');
+      setPickerTarget(null);
+    } else if (mode === 'create' && scheduleRangePrefill?.kind === 'week') {
+      applyDefaults();
+      setScheduleType('daily');
+      setStartDate(scheduleRangePrefill.weekStart);
+      setEndDate(weekSundayYmd(scheduleRangePrefill.weekStart));
+      setDayPeriod('all_day');
+    } else if (mode === 'create' && scheduleRangePrefill?.kind === 'month') {
+      applyDefaults();
+      setScheduleType('daily');
+      setStartDate(firstYmdOfMonth(scheduleRangePrefill.yearMonth));
+      setEndDate(lastYmdOfMonth(scheduleRangePrefill.yearMonth));
+      setDayPeriod('all_day');
     } else {
       applyDefaults();
     }
-  }, [visible, mode, todo, todayYmd, applyDefaults]);
+  }, [visible, mode, todo, todayYmd, applyDefaults, initialPlanSlotDraft, scheduleRangePrefill]);
 
   /** 모달을 닫은 직후 터치가 아래 날짜 버튼으로 전달되어 피커가 다시 뜨는 것을 막음 */
   const closePickerModalDeferred = useCallback(() => {
@@ -356,6 +422,7 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
       intervalDays,
       useOnceTime,
       onceTimePort,
+      dayPeriod,
     );
     if (!built.ok) {
       setLocalError(built.error);
@@ -365,7 +432,11 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
     setLocalError(null);
     try {
       if (mode === 'create') {
-        await requestJson('/v1/todos', { method: 'POST', body: built.body });
+        const body: Record<string, unknown> = { ...built.body };
+        if (initialPlanSlotDraft?.planSlotId) {
+          body.planSlotId = initialPlanSlotDraft.planSlotId;
+        }
+        await requestJson('/v1/todos', { method: 'POST', body });
       } else if (todo) {
         await requestJson(`/v1/todos/${todo.id}`, { method: 'PATCH', body: built.body });
       }
@@ -412,6 +483,16 @@ export function TodoFormModal({ visible, mode, todo, todayYmd, onClose, onSaved 
                     />
                   ))}
                 </View>
+                {scheduleType !== 'someday' ? (
+                  <>
+                    <FieldLabel>시간대</FieldLabel>
+                    <View style={styles.chipWrap}>
+                      <Chip label="종일" selected={dayPeriod === 'all_day'} onPress={() => setDayPeriod('all_day')} />
+                      <Chip label="오전" selected={dayPeriod === 'am'} onPress={() => setDayPeriod('am')} />
+                      <Chip label="오후" selected={dayPeriod === 'pm'} onPress={() => setDayPeriod('pm')} />
+                    </View>
+                  </>
+                ) : null}
                 <FieldLabel>일정 유형</FieldLabel>
                 <View style={styles.chipWrap}>
                   {scheduleOptions.map((option) => (

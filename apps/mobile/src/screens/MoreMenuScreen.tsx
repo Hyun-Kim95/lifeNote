@@ -13,7 +13,10 @@ const serviceRows: Row[] = [
   { title: '일기', subtitle: '날짜별 작성·템플릿', target: 'Diary' },
 ];
 
-const toolRows: Row[] = [{ title: '통계', subtitle: '주·월·연 요약', target: 'Stats' }];
+const toolRows: Row[] = [
+  { title: '주간 계획', subtitle: '요일·시간대 슬롯', target: 'WeekPlan' },
+  { title: '통계', subtitle: '주·월·연 요약', target: 'Stats' },
+];
 
 const accountRows: Row[] = [{ title: '설정', subtitle: '프로필·테마', target: 'Settings' }];
 

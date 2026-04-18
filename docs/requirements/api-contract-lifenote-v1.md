@@ -204,16 +204,21 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 | 파라미터 | 타입 | 설명 |
 |----------|------|------|
-| `date` | date | 반복 규칙 평가 기준일(`YYYY-MM-DD`). 미지정 시 서버 오늘 날짜 |
+| `date` | date | 반복 규칙 평가 기준일(`YYYY-MM-DD`). `weekStart`·`yearMonth`와 **동시 사용 불가** |
+| `weekStart` | date | 해당 주 **월요일(UTC)** `YYYY-MM-DD`. 그 주 7일 중 하루라도 스케줄이 맞으면 포함. `date`·`yearMonth`와 동시 사용 불가 |
+| `yearMonth` | string | `YYYY-MM`. 그 달 달력의 어느 날에든 스케줄이 맞으면 포함. `date`·`weekStart`와 동시 사용 불가 |
 | `dueOn` | date | 특정 일자 기준 |
 | `status` | enum | `all` \| `open` \| `done` |
 | `cursor` | string | 페이지네이션(커서) |
 | `limit` | int | 기본 50, 최대 100 |
 
-- 서버는 `date`를 기준으로 반복 규칙(`scheduleType`)을 평가해 노출 대상을 계산한다.
-- `dueOn`은 `scheduleType=once`인 단건 일정 필터에 우선 사용하고, 반복 일정은 `date` 기준으로 판정한다.
-- `scheduleType=someday`(언젠가)는 **날짜 조건 없이** `date`가 지정된 목록에도 항상 포함된다.
-- `date` 쿼리가 있을 때 응답 `items`는 **정렬된 배열**이다: 미완료(`done=false`)가 위, 완료가 아래. 미완료는 `dueAt` 오름차순(`dueAt` 없음은 미완료 구간 맨 아래), 동일 시 `createdAt` 오름차순. 완료는 `updatedAt` 내림차순.
+- `date`·`weekStart`·`yearMonth`를 **둘 이상**내면 **400** `VALIDATION_ERROR`.
+- `date`가 있을 때: 서버는 해당 일을 기준으로 반복 규칙(`scheduleType`)을 평가해 노출 대상을 계산한다.
+- `weekStart`·`yearMonth`가 있을 때: 사용자 할 일 후보를 불러온 뒤, 기간 내 각 달력일에 대해 동일 규칙으로 스케줄 여부를 판정해 **한 번이라도** 해당하면 `id` 기준으로 한 번만 포함한다.
+- `date`·`weekStart`·`yearMonth`가 **모두 없으면** 날짜 스코프 없이 기존처럼 `dueOn`·`status` 등 DB 조건 + 페이지네이션으로 목록을 반환한다.
+- `dueOn`은 `scheduleType=once`인 단건 일정 필터에 우선 사용하고, 반복 일정은 위 스코프 날짜 기준으로 판정한다.
+- `scheduleType=someday`(언젠가)는 **날짜 조건 없이** `date`/`weekStart`/`yearMonth`가 지정된 목록에도 항상 포함된다.
+- `date`·`weekStart`·`yearMonth` 중 하나가 지정된 경우 응답 `items`는 **정렬된 배열**이다: 미완료(`done=false`)가 위, 완료가 아래. 미완료는 `dueAt` 오름차순(`dueAt` 없음은 미완료 구간 맨 아래), 동일 시 `createdAt` 오름차순. 완료는 `updatedAt` 내림차순.
 
 **Response 200**
 
@@ -233,6 +238,8 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
       "dueAt": "2026-04-14T02:30:00.000Z",
       "priority": "normal",
       "done": false,
+      "dayPeriod": "all_day",
+      "planSlotId": null,
       "createdAt": "2026-04-13T…Z",
       "updatedAt": "2026-04-13T…Z"
     }
@@ -241,6 +248,9 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
   "stats": { "completed": 5, "total": 8 }
 }
 ```
+
+- `dayPeriod`(선택): `all_day` \| `am` \| `pm` \| `null`(미지정·기존 데이터).
+- `planSlotId`(선택): 주간 계획 슬롯에서 생성한 할 일이면 해당 `PlanSlot.id`, 아니면 `null`.
 
 ### 5.2 `POST /v1/todos`
 
@@ -253,16 +263,20 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
   "scheduleType": "once",
   "dueOn": "2026-04-15",
   "startDate": "2026-04-15",
-  "dueAt": "2026-04-15T05:30:00.000Z"
+  "dueAt": "2026-04-15T05:30:00.000Z",
+  "dayPeriod": "all_day",
+  "planSlotId": "clx…"
 }
 ```
 
+- `dayPeriod`(선택): `all_day` \| `am` \| `pm`. 생략 시 저장값 `null`(미지정).
 - `dueAt`(선택): ISO 8601. `once`에서 시각을 두면 정렬·표시에 사용. 생략 시 서버가 날짜만으로 `dueAt`을 채울 수 있다.
 - `scheduleType: "someday"`인 경우 `dueOn`/`startDate`/`dueAt`을 보내지 않는다.
+- `planSlotId`(선택): 본인 소유 주간 계획의 `PlanSlot.id`만 허용. 유효하지 않으면 `VALIDATION_ERROR`.
 
 ### 5.3 `PATCH /v1/todos/{id}`
 
-`title`, `priority`, `done`, `scheduleType`, `dueOn`, `dueAt`, `startDate`, `endDate`, `weekdays`, `monthDay`, `intervalDays` 부분 갱신.
+`title`, `priority`, `done`, `scheduleType`, `dueOn`, `dueAt`, `startDate`, `endDate`, `weekdays`, `monthDay`, `intervalDays`, `dayPeriod`(`null`로 미지정 복귀) 부분 갱신.
 
 ### 5.4 반복 타입/필드 규칙 요약
 
@@ -300,7 +314,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
     {
       "id": "sl_…",
       "dayOfWeek": 1,
-      "period": "morning",
+      "period": "am",
       "label": "운동",
       "sortOrder": 0
     }
@@ -308,11 +322,11 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 }
 ```
 
-`dayOfWeek`: 1=월 … 7=일. `period`: `morning` \| `forenoon` \| `afternoon` \| `evening` (PRD와 다르면 enum만 합의).
+`dayOfWeek`: 1=월 … 7=일. `period`: `all_day` \| `am` \| `pm`.
 
 ### 6.2 `PUT /v1/plans/weeks/{weekStart}`
 
-전체 슬롯 교체(멱등). 또는 `POST/PATCH/DELETE` 세분화는 구현 편의에 따라 선택 — **문서와 구현 일치**가 우선.
+요청 `slots[]`로 해당 주의 슬롯을 **동기화**한다. 각 원소는 `id`(선택, 기존 슬롯 유지 시 서버가 준 값)·`dayOfWeek`·`period`·`label`·`sortOrder`를 보낸다. `id`가 있고 해당 주에 속하면 갱신, 없거나 새 항목이면 생성, 요청에 없는 기존 슬롯은 삭제된다(연결된 할 일의 `planSlotId`는 DB에서 `SET NULL`). **문서와 구현 일치**가 우선.
 
 ---
 
@@ -375,7 +389,20 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 **Body** `{ "budgetAmount": 400000 }`
 
+- **과거 월(UTC 기준 현재 달 `YYYY-MM`보다 이전)** 은 수정할 수 없다. 위반 시 **400** `VALIDATION_ERROR` (예: 메시지 «과거 월 예산은 수정할 수 없습니다.»).
+- 허용된 경우, 요청한 `yearMonth`에 예산을 upsert하고, **그 달을 포함해 이후 달로 같은 `budgetAmount`를 연속 적용**한다(구현 기준: 시작 월 + 이후 36개월, 총 37개월 upsert).
+
 ### 8.3 `GET /v1/budgets/food/months/{yearMonth}/days`
+
+**Query**
+
+| 파라미터 | 설명 |
+|----------|------|
+| `category` | `all`(기본) 또는 일별 지출 `category`와 동일한 값. `all`이면 필터 없음. |
+| `limit` | 페이지 크기. 기본 **20**, 최대 **50**. |
+| `cursor` | 선택. `date|createdAt|id` 형식 커서. 같은 날짜 다건에서도 누락/중복 없이 다음 페이지를 조회한다. |
+
+**정렬**: `date` **내림차순**(최신 일자가 먼저).
 
 **Response 200**
 
@@ -383,20 +410,42 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 {
   "items": [
     {
+      "id": "cma123...",
       "date": "2026-04-14",
       "amount": 18500,
       "memo": "점심 도시락",
+      "category": "meal",
+      "createdAt": "2026-04-14T03:10:11.000Z",
       "updatedAt": "…"
     }
-  ]
+  ],
+  "nextCursor": "2026-04-14|2026-04-14T03:10:11.000Z|cma123..."
 }
 ```
 
-### 8.4 `PUT /v1/budgets/food/months/{yearMonth}/days/{date}`
+- `nextCursor`: 다음 페이지가 있으면 **이번 페이지 마지막 항목 기반 커서 문자열**. 없으면 `null`.
 
-해당 일자 1건 upsert(또는 `POST`로 다건 — MVP는 1일 1건으로 단순화 가능).
+`category` 허용 값: `meal` | `grocery` | `cafe` | `transit` | `medical` | `culture` | `other`. 생략 시 서버는 기존 값을 유지하거나(갱신 시) 신규는 `other`로 둔다.
 
-**Body** `{ "amount": 18500, "memo": "…" }`
+### 8.4 `POST /v1/budgets/food/months/{yearMonth}/days/{date}`
+
+해당 일자에 지출 1건을 **신규 생성**한다(같은 날짜 다건 허용).
+
+**Body** `{ "amount": 18500, "memo": "…", "category": "meal" }`
+
+- `category`는 선택. 위와 동일한 허용 값만 허용된다.
+
+### 8.5 `PUT /v1/budgets/food/months/{yearMonth}/days/items/{dayId}`
+
+지출 항목 `dayId` 1건 수정.
+
+**Body** `{ "amount": 18500, "memo": "…", "category": "meal" }`
+
+### 8.6 `DELETE /v1/budgets/food/months/{yearMonth}/days/items/{dayId}`
+
+지출 항목 `dayId` 1건 삭제. 기록이 없으면 **404**.
+
+**Response** `204 No Content`
 
 ---
 

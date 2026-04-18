@@ -21,5 +21,9 @@ Desktop.ini
 *.tmp
 .cache/
 
+# Expo / Cursor 로컬
+.expo/
+.cursor/state/
+
 # 로컬 Obsidian 동기화 설정 (sync-docs.ps1이 저장소 폴더명 기준으로 자동 생성)
 .obsidian-ingest.json

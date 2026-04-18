@@ -22,21 +22,29 @@ import { useAppTheme } from '../theme/ThemeContext';
 type Slot = {
   id?: string;
   dayOfWeek: number;
-  period: 'morning' | 'forenoon' | 'afternoon' | 'evening';
+  period: 'all_day' | 'am' | 'pm';
   label: string;
   sortOrder: number;
 };
 
-const PERIODS: Slot['period'][] = ['morning', 'forenoon', 'afternoon', 'evening'];
+const PERIODS: Slot['period'][] = ['all_day', 'am', 'pm'];
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const PERIOD_LABEL: Record<Slot['period'], string> = {
-  morning: '아침',
-  forenoon: '오전',
-  afternoon: '오후',
-  evening: '저녁',
+  all_day: '종일',
+  am: '오전',
+  pm: '오후',
 };
 
-export function PlanScreen() {
+export type PlanScreenProps = {
+  onRequestCreateTodoFromSlot?: (p: {
+    planSlotId: string;
+    label: string;
+    dayOfWeek: number;
+    weekStart: string;
+  }) => void;
+};
+
+export function PlanScreen({ onRequestCreateTodoFromSlot }: PlanScreenProps = {}) {
   const { colors, spacing } = useAppTheme();
   const { requestJson } = useApi();
   const [weekStart, setWeekStart] = useState(getWeekMonday());
@@ -47,7 +55,7 @@ export function PlanScreen() {
   const [saving, setSaving] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newDow, setNewDow] = useState(1);
-  const [newPeriod, setNewPeriod] = useState<Slot['period']>('morning');
+  const [newPeriod, setNewPeriod] = useState<Slot['period']>('all_day');
 
   const load = useCallback(async () => {
     setError(null);
@@ -76,6 +84,7 @@ export function PlanScreen() {
     setError(null);
     const body = {
       slots: slots.map((s, i) => ({
+        ...(s.id ? { id: s.id } : {}),
         dayOfWeek: s.dayOfWeek,
         period: s.period,
         label: s.label,
@@ -166,7 +175,7 @@ export function PlanScreen() {
     <FlatList
       style={{ flex: 1, backgroundColor: colors.bg }}
       data={slots}
-      keyExtractor={(_, i) => String(i)}
+      keyExtractor={(item, index) => item.id ?? `new-${index}`}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 32 }}
       ListEmptyComponent={
@@ -175,14 +184,35 @@ export function PlanScreen() {
         </View>
       }
       renderItem={({ item, index }) => (
-        <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <View
+          style={{
+            paddingHorizontal: spacing.lg,
+            marginTop: spacing.sm,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+        >
           <View style={{ flex: 1 }}>
             <ListItem
               title={item.label}
               subtitle={`${DAYS[item.dayOfWeek - 1] ?? item.dayOfWeek} · ${PERIOD_LABEL[item.period]}`}
             />
           </View>
-          <View style={{ width: 76 }}>
+          <View style={{ gap: spacing.xs, width: 96 }}>
+            {onRequestCreateTodoFromSlot && item.id ? (
+              <SecondaryButton
+                title="할 일로"
+                onPress={() =>
+                  onRequestCreateTodoFromSlot({
+                    planSlotId: item.id!,
+                    label: item.label,
+                    dayOfWeek: item.dayOfWeek,
+                    weekStart,
+                  })
+                }
+              />
+            ) : null}
             <SecondaryButton title="삭제" onPress={() => removeSlot(index)} />
           </View>
         </View>

@@ -90,7 +90,7 @@ export function StatsScreen() {
         </Card>
       ) : null}
       {showEmpty ? (
-        <EmptyState text="아직 기록이 없어요. 할 일·일기·식비를 채우면 이곳에 요약이 표시됩니다." />
+        <EmptyState text="아직 기록이 없어요. 할 일·일기·가계부를 채우면 이곳에 요약이 표시됩니다." />
       ) : null}
       {data && !error && !showEmpty ? (
         <>
@@ -110,7 +110,7 @@ export function StatsScreen() {
             </Text>
           </Card>
           <Card>
-            <Muted>식비 지출 현황</Muted>
+            <Muted>가계부 지출</Muted>
             <Text style={{ fontFamily: fonts.title, ...fonts.typography.title, color: colors.text }}>
               {data.food.totalSpent.toLocaleString()}원
             </Text>

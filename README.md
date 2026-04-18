@@ -41,19 +41,42 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=<google-oauth-web-client-id>
 
 ### 3) 모바일 실행
 
+저장소 루트에서:
+
 ```bash
 npm run dev:mobile
+```
+
+Metro 캐시를 비우며 `apps/mobile`에서 직접 띄울 때(Expo Go로 연결할 때 등):
+
+```bash
+cd apps/mobile
+npx expo start --clear
 ```
 
 - Android 에뮬레이터 기본 API: `http://10.0.2.2:4000`
 - iOS 시뮬레이터/웹: `http://localhost:4000`
 - 실기기: `http://<내PC_로컬IP>:4000`
+- **주간 계획**은 하단 **할 일** 탭에서 **이번 주** 세그먼트로 들어가 편집합니다(별도 계획 탭 없음).
 
 ### 4) 모바일 환경 변수·로그인
 
 - `apps/mobile/.env.example`을 참고해 `apps/mobile/.env`에 `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 설정합니다(Google Cloud OAuth Web 클라이언트는 API의 `GOOGLE_CLIENT_ID`와 동일 권장).
 - 앱은 **Google 로그인**으로 JWT를 받아 제품 화면(홈·To-do·식비 등)을 사용합니다. **수동 Access Token 입력**은 개발 모드(`__DEV__`)의 개발자 화면에서만 제공합니다.
 - RC·UAT 구분은 `docs/qa/rc-uat-handoff.md`를 참고합니다.
+
+**Android 에뮬레이터에서 Google 로그인 시 `localhost:4000` 연결 거부(`ERR_CONNECTION_REFUSED`)**
+
+- 앱 내부 API 호출은 `http://10.0.2.2:4000`으로 PC에 붙지만, OAuth는 브라우저·WebView가 **`http://localhost:4000/v1/auth/google/mobile-callback`** 같은 주소로 돌아오는 경우가 많습니다. 에뮬레이터 안의 `localhost`는 PC가 아니라 에뮬레이터 자신이라, 포트 포워딩 없으면 연결이 거부됩니다.
+- **PC에서 API가 떠 있는지** 확인합니다(`npm run dev:api`, `http://localhost:4000/v1/health`).
+- 에뮬레이터가 붙은 기기에서 **한 번 실행**합니다(터미널에 `adb`가 잡혀 있어야 합니다).
+
+```bash
+adb reverse tcp:4000 tcp:4000
+```
+
+- 에뮬레이터를 껐다 켜거나 USB 디버깅 대상이 바뀌면 `adb reverse`를 다시 실행해야 할 수 있습니다.
+- 리디렉션 URI·동작 설명은 `apps/mobile/src/config.ts` 주석과 `apps/mobile/.env.example`의 `EXPO_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI` 안내를 따릅니다.
 
 ## 사전 요구
 
@@ -75,6 +98,7 @@ npm install
 | API | `npm run dev:api` | 기본 `http://localhost:4000`, 경로 접두사 `/v1` |
 | 웹 | `npm run dev:web` | 기본 `http://localhost:3000` |
 | 앱 | `npm run dev:mobile` | Expo |
+| 앱(Metro 캐시 클리어) | `cd apps/mobile` 후 `npx expo start --clear` | 루트 `dev:mobile`과 동일 워크스페이스, `--clear`로 번들 캐시 초기화 |
 | 웹 통합 E2E(기본) | `npm run e2e -w web` | Playwright(관리자 모킹·인증 시나리오 등) |
 | 웹 E2E(live 라우트) | `npm run e2e:live -w web` | dev 서버 공개 페이지(`/`·`/login`) 스모크(토큰 불필요) |
 

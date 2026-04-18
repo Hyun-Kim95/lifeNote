@@ -6,6 +6,7 @@ import { MoreMenuScreen } from '../screens/MoreMenuScreen';
 import { NoticesScreen } from '../screens/NoticesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StatsScreen } from '../screens/StatsScreen';
+import { PlanScreen } from '../screens/PlanScreen';
 import type { MoreStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
@@ -36,6 +37,7 @@ export function MoreStack() {
       <Stack.Screen name="Notices" component={NoticesScreen} options={{ title: '공지' }} />
       <Stack.Screen name="Community" component={CommunityScreen} options={{ title: '커뮤니티' }} />
       <Stack.Screen name="Stats" component={StatsScreen} options={{ title: '통계' }} />
+      <Stack.Screen name="WeekPlan" component={PlanScreen} options={{ title: '주간 계획' }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: '설정' }} />
     </Stack.Navigator>
   );

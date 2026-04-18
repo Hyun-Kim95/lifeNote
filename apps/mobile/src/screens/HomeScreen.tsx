@@ -86,18 +86,16 @@ export function HomeScreen() {
     void load();
   };
 
-  const openTab = (tab: 'TodosTab' | 'FoodTab' | 'PlanTab') => {
-    const nav = navigation as { navigate?: (name: string) => void };
+  const openTab = (tab: 'TodosTab' | 'FoodTab') => {
+    const nav = navigation as { navigate?: (name: string, params?: object) => void };
     nav.navigate?.(tab);
   };
 
   const openMore = (screen: 'Diary' | 'Notices' | 'Stats') => {
     const nav = navigation as {
       navigate?: (name: string, params?: { screen?: string }) => void;
-      getParent?: () => { navigate?: (name: string, params?: { screen?: string }) => void };
     };
     nav.navigate?.('MoreTab', { screen });
-    nav.getParent?.()?.navigate?.('MoreTab', { screen });
   };
 
   const todoPercent = data?.todo.percent ?? 0;
@@ -187,7 +185,7 @@ export function HomeScreen() {
           <View style={[styles.summaryIconWrap, { backgroundColor: colors.primaryTint, borderRadius: radius.round }]}>
             <Ionicons name="wallet" size={icon.md} color={colors.primary} />
           </View>
-          <SectionLabel>{`${data?.date?.slice(5, 7) ?? '--'}월 식비 관리`}</SectionLabel>
+          <SectionLabel>{`${data?.date?.slice(5, 7) ?? '--'}월 가계부`}</SectionLabel>
         </View>
         <Body size="sm">{`예산 ${data ? data.foodBudget.budgetAmount.toLocaleString() : '-'}원 중`}</Body>
         <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
@@ -217,13 +215,19 @@ export function HomeScreen() {
             </Text>
           </View>
         </View>
-        <PrimaryButton title="기록하기" onPress={() => openTab('FoodTab')} />
+        <PrimaryButton title="가계부에 기록" onPress={() => openTab('FoodTab')} />
       </Card>
       <Card style={styles.quickGridCard}>
         <View style={styles.quickGridRow}>
-          <Pressable onPress={() => openTab('PlanTab')} style={[styles.quickGridItem, { borderColor: colors.border }]}>
+          <Pressable
+            onPress={() => {
+              const nav = navigation as { navigate?: (name: string, params?: object) => void };
+              nav.navigate?.('TodosTab', { initialScope: 'week' });
+            }}
+            style={[styles.quickGridItem, { borderColor: colors.border }]}
+          >
             <Ionicons name="calendar-outline" size={icon.lg} color={colors.textSecondary} />
-            <Body>계획표</Body>
+            <Body>이번 주</Body>
           </Pressable>
           <Pressable onPress={() => openMore('Diary')} style={[styles.quickGridItem, { borderColor: colors.border }]}>
             <Ionicons name="create-outline" size={icon.lg} color={colors.textSecondary} />

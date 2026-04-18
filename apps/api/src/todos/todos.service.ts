@@ -6,11 +6,17 @@ import {
 import {
   Prisma,
   Todo,
+  TodoDayPeriod,
   TodoPriority,
   TodoScheduleType as TodoScheduleTypeDb,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { parseYmdToUtcDate } from '../common/utils/date-parse';
+import {
+  eachUtcMidnightInMonth,
+  eachUtcMidnightInWeekFromMonday,
+  isUtcMonday,
+  parseYmdToUtcDate,
+} from '../common/utils/date-parse';
 import {
   CreateTodoDto,
   TodoScheduleType,
@@ -46,6 +52,18 @@ const scheduleTypeToApi: Record<TodoScheduleTypeDb, TodoScheduleType> = {
   MONTHLY: 'monthly',
   INTERVAL: 'interval',
   SOMEDAY: 'someday',
+};
+
+const dayPeriodToDb: Record<string, TodoDayPeriod> = {
+  all_day: 'ALL_DAY',
+  am: 'AM',
+  pm: 'PM',
+};
+
+const dayPeriodToApi: Record<TodoDayPeriod, string> = {
+  ALL_DAY: 'all_day',
+  AM: 'am',
+  PM: 'pm',
 };
 
 type ScheduleRuleInput = {
@@ -247,8 +265,39 @@ export class TodosService {
       monthDay: t.monthDay,
       intervalDays: t.intervalDays,
       done: t.done,
+      dayPeriod: t.dayPeriod ? dayPeriodToApi[t.dayPeriod] : null,
+      planSlotId: t.planSlotId,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
+    };
+  }
+
+  private paginateFilteredTodos(
+    filtered: Todo[],
+    limit: number,
+    cursor?: string,
+  ) {
+    filtered.sort(sortTodosForDisplay);
+    const total = filtered.length;
+    const completed = filtered.filter((todo) => todo.done).length;
+
+    let afterCursor = filtered;
+    if (cursor) {
+      const cursorIndex = filtered.findIndex((todo) => todo.id === cursor);
+      if (cursorIndex >= 0) {
+        afterCursor = filtered.slice(cursorIndex + 1);
+      }
+    }
+
+    const page = afterCursor.slice(0, limit);
+    const hasMore = afterCursor.length > limit;
+    const nextCursor =
+      hasMore && page.length > 0 ? page[page.length - 1].id : null;
+
+    return {
+      items: page.map((t) => this.mapTodo(t)),
+      nextCursor,
+      stats: { completed, total },
     };
   }
 
@@ -272,38 +321,63 @@ export class TodosService {
   async list(userId: string, q: ListTodosQueryDto) {
     const limit = Math.min(100, Math.max(1, q.limit ?? 50));
     const whereBase = this.buildFilter(userId, q);
+
+    const scopeKeys = [q.date, q.weekStart, q.yearMonth].filter(Boolean);
+    if (scopeKeys.length > 1) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'date, weekStart, yearMonth 중 하나만 지정할 수 있습니다.',
+      });
+    }
+
+    let rangeDays: Date[] | null = null;
+    if (q.weekStart) {
+      try {
+        parseYmdToUtcDate(q.weekStart);
+      } catch {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'weekStart 날짜가 올바르지 않습니다.',
+        });
+      }
+      if (!isUtcMonday(q.weekStart)) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'weekStart는 해당 주 월요일(UTC)이어야 합니다.',
+        });
+      }
+      rangeDays = eachUtcMidnightInWeekFromMonday(q.weekStart);
+    } else if (q.yearMonth) {
+      try {
+        rangeDays = eachUtcMidnightInMonth(q.yearMonth);
+      } catch {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'yearMonth는 YYYY-MM 형식의 유효한 달이어야 합니다.',
+        });
+      }
+    }
+
     const targetDate = q.date ? parseYmdToUtcDate(q.date) : null;
 
-    if (targetDate) {
+    if (targetDate || rangeDays) {
       const allRows = await this.prisma.todo.findMany({
         where: whereBase,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
-      const filtered = allRows.filter((todo) =>
-        isTodoScheduledOnDate(todo, targetDate),
-      );
-      filtered.sort(sortTodosForDisplay);
-      const total = filtered.length;
-      const completed = filtered.filter((todo) => todo.done).length;
 
-      let afterCursor = filtered;
-      if (q.cursor) {
-        const cursorIndex = filtered.findIndex((todo) => todo.id === q.cursor);
-        if (cursorIndex >= 0) {
-          afterCursor = filtered.slice(cursorIndex + 1);
-        }
+      let filtered: Todo[];
+      if (targetDate) {
+        filtered = allRows.filter((todo) =>
+          isTodoScheduledOnDate(todo, targetDate),
+        );
+      } else {
+        filtered = allRows.filter((todo) =>
+          rangeDays!.some((day) => isTodoScheduledOnDate(todo, day)),
+        );
       }
 
-      const page = afterCursor.slice(0, limit);
-      const hasMore = afterCursor.length > limit;
-      const nextCursor =
-        hasMore && page.length > 0 ? page[page.length - 1].id : null;
-
-      return {
-        items: page.map((t) => this.mapTodo(t)),
-        nextCursor,
-        stats: { completed, total },
-      };
+      return this.paginateFilteredTodos(filtered, limit, q.cursor);
     }
 
     const [total, completed] = await Promise.all([
@@ -372,6 +446,24 @@ export class TodosService {
     });
     assertScheduleRuleInput(scheduleInput);
 
+    let planSlotId: string | null = null;
+    const rawPlanSlotId = dto.planSlotId?.trim();
+    if (rawPlanSlotId) {
+      const slot = await this.prisma.planSlot.findFirst({
+        where: {
+          id: rawPlanSlotId,
+          weekPlan: { userId },
+        },
+      });
+      if (!slot) {
+        throw new BadRequestException({
+          code: 'VALIDATION_ERROR',
+          message: 'planSlotId가 유효하지 않거나 접근할 수 없습니다.',
+        });
+      }
+      planSlotId = slot.id;
+    }
+
     if (scheduleInput.scheduleType === 'someday' && dto.dueAt) {
       throw new BadRequestException({
         code: 'INVALID_TODO_SCHEDULE',
@@ -416,6 +508,9 @@ export class TodosService {
         : null;
     }
 
+    const dayPeriodDb =
+      dto.dayPeriod != null ? dayPeriodToDb[dto.dayPeriod] : undefined;
+
     const t = await this.prisma.todo.create({
       data: {
         userId,
@@ -431,6 +526,8 @@ export class TodosService {
         weekdays: scheduleInput.weekdays,
         monthDay: scheduleInput.monthDay,
         intervalDays: scheduleInput.intervalDays,
+        ...(dayPeriodDb ? { dayPeriod: dayPeriodDb } : {}),
+        planSlotId,
       },
     });
     return this.mapTodo(t);
@@ -459,6 +556,10 @@ export class TodosService {
     }
     if (dto.done !== undefined) {
       data.done = dto.done;
+    }
+    if (dto.dayPeriod !== undefined) {
+      data.dayPeriod =
+        dto.dayPeriod === null ? null : dayPeriodToDb[dto.dayPeriod];
     }
 
     const hasSchedulePatch =

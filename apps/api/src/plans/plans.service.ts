@@ -9,17 +9,15 @@ import {
 import { PutWeekPlanDto } from './dto/put-week-plan.dto';
 
 const periodToDb: Record<string, PlanPeriod> = {
-  morning: 'MORNING',
-  forenoon: 'FORENOON',
-  afternoon: 'AFTERNOON',
-  evening: 'EVENING',
+  all_day: 'ALL_DAY',
+  am: 'AM',
+  pm: 'PM',
 };
 
 const periodToApi: Record<PlanPeriod, string> = {
-  MORNING: 'morning',
-  FORENOON: 'forenoon',
-  AFTERNOON: 'afternoon',
-  EVENING: 'evening',
+  ALL_DAY: 'all_day',
+  AM: 'am',
+  PM: 'pm',
 };
 
 @Injectable()
@@ -92,28 +90,51 @@ export class PlansService {
     this.assertWeekStart(weekStart);
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.weekPlan.deleteMany({
-        where: { userId, weekStart },
+      let plan = await tx.weekPlan.findUnique({
+        where: { userId_weekStart: { userId, weekStart } },
       });
-
-      if (dto.slots.length === 0) {
-        return;
+      if (!plan) {
+        plan = await tx.weekPlan.create({
+          data: { userId, weekStart },
+        });
       }
 
-      await tx.weekPlan.create({
-        data: {
-          userId,
-          weekStart,
-          slots: {
-            create: dto.slots.map((s) => ({
-              dayOfWeek: s.dayOfWeek,
-              period: periodToDb[s.period],
-              label: s.label,
-              sortOrder: s.sortOrder,
-            })),
-          },
-        },
+      const existingSlots = await tx.planSlot.findMany({
+        where: { weekPlanId: plan.id },
       });
+      const existingById = new Map(existingSlots.map((s) => [s.id, s]));
+      const keptIds = new Set<string>();
+
+      for (const s of dto.slots) {
+        const data = {
+          dayOfWeek: s.dayOfWeek,
+          period: periodToDb[s.period],
+          label: s.label,
+          sortOrder: s.sortOrder,
+        };
+        if (s.id && existingById.has(s.id)) {
+          await tx.planSlot.update({
+            where: { id: s.id },
+            data,
+          });
+          keptIds.add(s.id);
+        } else {
+          const created = await tx.planSlot.create({
+            data: { weekPlanId: plan.id, ...data },
+          });
+          keptIds.add(created.id);
+        }
+      }
+
+      const toRemove = existingSlots.filter((ex) => !keptIds.has(ex.id));
+      if (toRemove.length > 0) {
+        await tx.planSlot.deleteMany({
+          where: {
+            weekPlanId: plan.id,
+            id: { in: toRemove.map((r) => r.id) },
+          },
+        });
+      }
     });
 
     return this.getWeek(userId, weekStart);

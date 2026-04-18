@@ -65,6 +65,13 @@ enum TodoScheduleType {
   SOMEDAY
 }
 
+/// 할 일 표시용 시간대(종일/오전/오후)
+enum TodoDayPeriod {
+  ALL_DAY
+  AM
+  PM
+}
+
 model Todo {
   id        String       @id @default(cuid())
   userId    String
@@ -81,11 +88,16 @@ model Todo {
   intervalDays Int?
   priority  TodoPriority @default(NORMAL)
   done      Boolean      @default(false)
+  dayPeriod TodoDayPeriod?
+  /// 주간 계획 슬롯에서 생성한 할 일(선택). 슬롯 삭제 시 null.
+  planSlotId String?
+  planSlot   PlanSlot?   @relation(fields: [planSlotId], references: [id], onDelete: SetNull)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([userId, dueOn])
+  @@index([planSlotId])
 }
 
 /// 관리자가 등록하는 명언(활성 중 홈·배너 API에 노출)
@@ -122,10 +134,13 @@ model FoodDaySpend {
   date      DateTime @db.Date
   amount    Int      @default(0)
   memo      String?
+  /// meal | grocery | cafe | transit | medical | culture | other
+  category  String   @default("other")
+  createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  @@unique([userId, date])
   @@index([userId, date])
+  @@index([userId, date(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
 }
 
 /// 주간 계획(사용자별, weekStart = 해당 주 월요일 YYYY-MM-DD)
@@ -142,10 +157,9 @@ model WeekPlan {
 }
 
 enum PlanPeriod {
-  MORNING
-  FORENOON
-  AFTERNOON
-  EVENING
+  ALL_DAY
+  AM
+  PM
 }
 
 model PlanSlot {
@@ -153,9 +167,10 @@ model PlanSlot {
   weekPlanId String
   weekPlan   WeekPlan   @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
   dayOfWeek  Int
-  period     PlanPeriod
+  period     PlanPeriod @default(ALL_DAY)
   label      String
   sortOrder  Int        @default(0)
+  todos      Todo[]
 
   @@index([weekPlanId, dayOfWeek, sortOrder])
 }

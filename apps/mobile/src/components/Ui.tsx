@@ -317,11 +317,13 @@ export function ListItem({
   subtitle,
   onPress,
   trailing,
+  leading,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   onPress?: () => void;
   trailing?: ReactNode;
+  leading?: ReactNode;
 }) {
   const { colors, radius, spacing, stroke } = useAppTheme();
   return (
@@ -339,6 +341,7 @@ export function ListItem({
         gap: spacing.sm,
       }}
     >
+      {leading}
       <View style={{ flex: 1 }}>
         {typeof title === 'string' ? <Body>{title}</Body> : title}
         {subtitle ? (typeof subtitle === 'string' ? <Muted>{subtitle}</Muted> : subtitle) : null}

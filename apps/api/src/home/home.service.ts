@@ -42,12 +42,13 @@ export class HomeService {
       orderBy: [{ priority: 'desc' }, { id: 'asc' }],
     });
 
-    const [totalTodos, completedTodos, month, todaySpend] = await Promise.all([
+    const [totalTodos, completedTodos, month, todaySpendAgg] = await Promise.all([
       this.prisma.todo.count({ where: { userId } }),
       this.prisma.todo.count({ where: { userId, done: true } }),
       this.food.getMonth(userId, ym),
-      this.prisma.foodDaySpend.findUnique({
-        where: { userId_date: { userId, date } },
+      this.prisma.foodDaySpend.aggregate({
+        where: { userId, date },
+        _sum: { amount: true },
       }),
     ]);
 
@@ -71,7 +72,7 @@ export class HomeService {
         budgetAmount: month.budgetAmount,
         spentAmount: month.spentAmount,
         remainingAmount: month.remainingAmount,
-        todaySpentAmount: todaySpend?.amount ?? 0,
+        todaySpentAmount: todaySpendAgg._sum.amount ?? 0,
       },
     };
   }

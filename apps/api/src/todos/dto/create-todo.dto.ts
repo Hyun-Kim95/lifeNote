@@ -74,4 +74,14 @@ export class CreateTodoDto {
   @IsInt()
   @Min(1)
   intervalDays?: number;
+
+  /** 주간 계획 슬롯에서 생성 시(해당 슬롯 id, 본인 소유만 허용) */
+  @IsOptional()
+  @IsString()
+  planSlotId?: string;
+
+  /** 종일·오전·오후(미지정 시 null) */
+  @IsOptional()
+  @IsIn(['all_day', 'am', 'pm'])
+  dayPeriod?: 'all_day' | 'am' | 'pm';
 }

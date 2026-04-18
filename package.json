@@ -1,6 +1,7 @@
 {
   "name": "lifenote",
   "private": true,
+  "main": "apps/mobile/index.ts",
   "workspaces": [
     "apps/*"
   ],

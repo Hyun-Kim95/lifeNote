@@ -4,6 +4,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsOptional,
   IsString,
   Max,
   MaxLength,
@@ -12,13 +13,18 @@ import {
 } from 'class-validator';
 
 export class PlanSlotItemDto {
+  /** 기존 슬롯 유지 시 서버가 내려준 id. 생략 시 신규 생성 */
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @IsInt()
   @Min(1)
   @Max(7)
   dayOfWeek: number;
 
-  @IsIn(['morning', 'forenoon', 'afternoon', 'evening'])
-  period: 'morning' | 'forenoon' | 'afternoon' | 'evening';
+  @IsIn(['all_day', 'am', 'pm'])
+  period: 'all_day' | 'am' | 'pm';
 
   @IsString()
   @MaxLength(200)

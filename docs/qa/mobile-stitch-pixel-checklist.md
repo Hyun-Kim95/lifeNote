@@ -81,10 +81,10 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 
 | 항목             | 판정  | 메모  |
 | -------------- | --- | --- |
-| 월 예산 카드 계층/간격  |     |     |
-| 일별 지출 셀 타이포 계층 |     |     |
-| 날짜/메모 보조 텍스트 톤 |     |     |
-| 빈 상태 카드 정렬     |     |     |
+| 월 예산 카드 계층/간격  | PASS | `FoodScreen`: 월 헤더(‹ YYYY년 M월 ›)·남은 금액 강조·지갑 아이콘·이번 달 예산/누적 사용 행·예산 입력·Stitch 톤 |
+| 일별 지출 셀 타이포 계층 | PASS | 날짜 `Muted` → 메모 `Body` → 금액 trailing `−n`·Material 아이콘(메모 키워드 휴리스틱) |
+| 날짜/메모 보조 텍스트 톤 | PASS | Stitch 최근 기록 행과 동일 계층 |
+| 빈 상태 카드 정렬     | PASS | `inventory-2` + 「기록이 없어요」+ 보조 `Muted` |
 
 
 ## 4) Plan (`416c8f8a79864af1a32f6e382e8fc017`)

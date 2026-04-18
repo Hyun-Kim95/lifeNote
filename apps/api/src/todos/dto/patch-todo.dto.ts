@@ -74,4 +74,9 @@ export class PatchTodoDto {
   @IsInt()
   @Min(1)
   intervalDays?: number | null;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsIn(['all_day', 'am', 'pm'])
+  dayPeriod?: 'all_day' | 'am' | 'pm' | null;
 }

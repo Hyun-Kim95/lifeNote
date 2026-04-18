@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FoodScreen } from '../screens/FoodScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { PlanScreen } from '../screens/PlanScreen';
 import { TodosScreen } from '../screens/TodosScreen';
 import { useAppTheme } from '../theme/ThemeContext';
 import { MoreStack } from './MoreStack';
@@ -76,16 +75,8 @@ export function MainTabs() {
         name="FoodTab"
         component={FoodScreen}
         options={{
-          tabBarLabel: '식비',
-          tabBarIcon: tabIcon('restaurant', 'restaurant-outline'),
-        }}
-      />
-      <Tab.Screen
-        name="PlanTab"
-        component={PlanScreen}
-        options={{
-          tabBarLabel: '계획',
-          tabBarIcon: tabIcon('calendar', 'calendar-outline'),
+          tabBarLabel: '가계부',
+          tabBarIcon: tabIcon('wallet', 'wallet-outline'),
         }}
       />
       <Tab.Screen

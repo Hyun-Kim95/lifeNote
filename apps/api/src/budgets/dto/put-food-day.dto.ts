@@ -1,4 +1,5 @@
-import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { FOOD_DAY_CATEGORY_VALUES } from '../food-day-category';
 
 export class PutFoodDayDto {
   @IsInt()
@@ -9,4 +10,9 @@ export class PutFoodDayDto {
   @IsString()
   @MaxLength(500)
   memo?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn([...FOOD_DAY_CATEGORY_VALUES])
+  category?: string;
 }

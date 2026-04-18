@@ -1,9 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
+  Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type { RequestUser } from '../common/decorators/current-user.decorator';
@@ -22,18 +27,48 @@ export class FoodBudgetController {
   getDays(
     @CurrentUser() user: RequestUser,
     @Param('yearMonth') yearMonth: string,
+    @Query('category') category?: string,
+    @Query('limit') limitStr?: string,
+    @Query('cursor') cursor?: string,
   ) {
-    return this.food.getDays(user.userId, yearMonth);
+    let limit: number | undefined;
+    if (limitStr !== undefined && limitStr !== '') {
+      const n = parseInt(limitStr, 10);
+      if (Number.isFinite(n)) limit = n;
+    }
+    return this.food.getDays(user.userId, yearMonth, {
+      category,
+      limit,
+      cursor,
+    });
   }
 
-  @Put(':yearMonth/days/:date')
-  putDay(
+  @Post(':yearMonth/days/:date')
+  createDay(
     @CurrentUser() user: RequestUser,
     @Param('yearMonth') yearMonth: string,
     @Param('date') date: string,
     @Body() dto: PutFoodDayDto,
   ) {
-    return this.food.putDay(user.userId, yearMonth, date, dto);
+    return this.food.createDay(user.userId, yearMonth, date, dto);
+  }
+
+  @Put(':yearMonth/days/items/:dayId')
+  updateDayById(
+    @CurrentUser() user: RequestUser,
+    @Param('dayId') dayId: string,
+    @Body() dto: PutFoodDayDto,
+  ) {
+    return this.food.updateDayById(user.userId, dayId, dto);
+  }
+
+  @Delete(':yearMonth/days/items/:dayId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteDayById(
+    @CurrentUser() user: RequestUser,
+    @Param('dayId') dayId: string,
+  ) {
+    return this.food.deleteDayById(user.userId, dayId);
   }
 
   @Get(':yearMonth')
