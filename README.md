@@ -59,6 +59,8 @@ npx expo start --clear
 - 실기기: `http://<내PC_로컬IP>:4000`
 - **주간 계획**은 하단 **할 일** 탭에서 **이번 주** 세그먼트로 들어가 편집합니다(별도 계획 탭 없음).
 
+실기기에서 **Google OAuth(딥링크 `lifenote://`)** 까지 안정적으로 검증하려면 Expo Go 대신 **Android Development Build** 사용을 권장합니다. 절차는 `docs/mobile/dev-client-android.md`를 따릅니다.
+
 ### 4) 모바일 환경 변수·로그인
 
 - `apps/mobile/.env.example`을 참고해 `apps/mobile/.env`에 `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 설정합니다(Google Cloud OAuth Web 클라이언트는 API의 `GOOGLE_CLIENT_ID`와 동일 권장).
