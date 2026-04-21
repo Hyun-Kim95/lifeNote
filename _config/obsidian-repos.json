@@ -1,8 +1,8 @@
 {
   "repositories": [
     {
-      "slug": "my-cursor-template",
-      "path": "d:\\cursor\\my-cursor-template",
+      "slug": "lifeNote",
+      "path": "d:\\cursor\\lifeNote",
       "docsPaths": ["docs"]
     }
   ]

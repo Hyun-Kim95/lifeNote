@@ -26,19 +26,32 @@
 
 ## 문서를 옵시디언 노트 형태로 (frontmatter + Vault 링크)
 
-`docs/requirements`, `docs/qa`, `docs/design`, `docs/decisions`, `docs/changelog` 아래 `.md` 중 **맨 앞이 `---`가 아닌 파일**에 공통 YAML(`type`, `project`, `doc_lane`, `updated_at`, `tags`)과 맨 아래 `## Vault` 위키링크 블록을 추가한다.
+`docs/requirements`, `docs/qa`, `docs/design`, `docs/decisions`, `docs/changelog` 아래 `.md`에 대해 공통 YAML(`type`, `project`, `doc_lane`, `updated_at`, `tags`)과 `## Vault` 위키링크 블록 정합성을 점검한다.
+
+- 기본 실행: frontmatter 없는 파일은 주입하고, 기존 문서의 `project`/Vault 링크 불일치는 리포트한다.
+- `-CheckOnly`: 점검만 수행(파일 미변경).
+- `-FixMismatch`: 기존 frontmatter 문서의 `project`/Vault 링크 불일치까지 보정한다.
+- `-LaneFilter requirements,qa`: 특정 lane만 제한 점검/보정.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normalize-doc-frontmatter.ps1"
 ```
 
-이미 frontmatter가 있는 파일은 건너뛴다. 새 문서를 추가한 뒤 위 스크립트를 다시 실행하면 된다.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normalize-doc-frontmatter.ps1" -CheckOnly
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normalize-doc-frontmatter.ps1" -FixMismatch
+```
+
+기존 PRD를 다른 프로젝트에서 복사해 온 경우, 먼저 `-CheckOnly`로 불일치를 확인하고 필요한 경우 `-FixMismatch`를 1회 실행하는 운영을 권장한다.
 
 `## Vault`의 커밋 링크는 `[[…/journal]]`이 아니라 **`commit-journal-overview` 대시보드**를 가리킨다. 전자는 옵시디언이 빈 `journal.md` 노트를 만들어 백링크가 몰리는 문제가 있어서 피한다.
 
 ## Cursor에서 자동 설치
 - 세션 시작 시 `.cursor/hooks/bootstrap-obsidian-once.ps1`가 한 번 실행되며, Git 레포면 `install-hook.ps1`까지 호출할 수 있다.
-- 에이전트가 파일을 쓸 때(`Write`/`TabWrite`) `.cursor/hooks/ensure-obsidian-git-hook.ps1`가 `post-commit`이 올바른지 보고, 없거나 예전 형식이면 `install-hook.ps1`를 실행한다. (수동으로 `install-hook`을 안 돌려도 된다.)
+- Cursor의 `afterFileEdit` 훅(파일 쓰기 이벤트, matcher: `Write|TabWrite`)에서 `.cursor/hooks/ensure-obsidian-git-hook.ps1`가 `post-commit` 형식을 점검하고, 없거나 예전 형식이면 `install-hook.ps1`를 실행한다. (수동으로 `install-hook`을 안 돌려도 된다.)
 - 문서 변경 감지 훅(`.cursor/hooks/sync-docs-on-doc-change.ps1`)은 기본 15초 쿨다운을 적용해 저장 연타 시 중복 동기화를 줄인다.
 - 훅 형식을 바꾼 뒤에는 `.cursor/state/obsidian-post-commit.ok`를 지우거나 `post-commit`을 삭제하면 다음 편집 때 다시 맞춘다.
 - 훅은 fail-open이며, 실패 원인은 `.cursor/state/obsidian-hook-warnings.log`에 경량 로그로 남는다.
