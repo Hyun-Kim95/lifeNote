@@ -59,6 +59,19 @@ function combineLocalYmdAndTime(ymd: string, timePort: Date): string {
   return c.toISOString();
 }
 
+function formatHHmmLocal(d: Date): string {
+  const h = d.getHours();
+  const m = d.getMinutes();
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function parseTimeLocalToDate(hhmm: string): Date {
+  const [hs, ms] = hhmm.trim().split(':');
+  const hh = Number(hs);
+  const mm = Number(ms);
+  return new Date(2000, 0, 1, Number.isFinite(hh) ? hh : 0, Number.isFinite(mm) ? mm : 0, 0, 0);
+}
+
 const weekdayOptions = [
   { label: '월', value: 1 },
   { label: '화', value: 2 },
@@ -84,7 +97,7 @@ const priorityOptions: Array<{ label: string; value: 'low' | 'normal' | 'high' }
   { label: '높음', value: 'high' },
 ];
 
-type PickerTarget = 'onceDate' | 'onceTime' | 'start' | 'end' | null;
+type PickerTarget = 'onceDate' | 'onceTime' | 'optionalTime' | 'start' | 'end' | null;
 
 function buildBody(
   title: string,
@@ -99,6 +112,9 @@ function buildBody(
   useOnceTime: boolean,
   onceTimePort: Date,
   dayPeriod: TodoDayPeriodApi,
+  useOptionalTimeLocal: boolean,
+  optionalTimePort: Date,
+  formMode: 'create' | 'edit',
 ): { ok: true; body: Record<string, unknown> } | { ok: false; error: string } {
   if (!title.trim()) {
     return { ok: false, error: '제목을 입력하세요.' };
@@ -190,6 +206,19 @@ function buildBody(
     payload.startDate = startDate.trim();
   }
 
+  if (
+    scheduleType === 'daily' ||
+    scheduleType === 'weekly' ||
+    scheduleType === 'monthly' ||
+    scheduleType === 'interval'
+  ) {
+    if (useOptionalTimeLocal) {
+      payload.timeLocal = formatHHmmLocal(optionalTimePort);
+    } else if (formMode === 'edit') {
+      payload.timeLocal = null;
+    }
+  }
+
   return { ok: true, body: payload };
 }
 
@@ -204,6 +233,19 @@ function resetFormFromTodo(t: Todo, todayYmd: string) {
     t.dayPeriod === 'am' || t.dayPeriod === 'pm' || t.dayPeriod === 'all_day'
       ? t.dayPeriod
       : 'all_day';
+  let useOptionalTimeLocal = false;
+  let optionalTimePort = new Date();
+  if (
+    (t.scheduleType === 'daily' ||
+      t.scheduleType === 'weekly' ||
+      t.scheduleType === 'monthly' ||
+      t.scheduleType === 'interval') &&
+    t.timeLocal &&
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(t.timeLocal.trim())
+  ) {
+    useOptionalTimeLocal = true;
+    optionalTimePort = parseTimeLocalToDate(t.timeLocal.trim());
+  }
   return {
     title: t.title,
     priority: t.priority,
@@ -217,6 +259,8 @@ function resetFormFromTodo(t: Todo, todayYmd: string) {
     useOnceTime,
     onceTimePort,
     dayPeriod,
+    useOptionalTimeLocal,
+    optionalTimePort,
   };
 }
 
@@ -267,6 +311,8 @@ export function TodoFormModal({
   const [intervalDays, setIntervalDays] = useState('');
   const [useOnceTime, setUseOnceTime] = useState(false);
   const [onceTimePort, setOnceTimePort] = useState(() => new Date());
+  const [useOptionalTimeLocal, setUseOptionalTimeLocal] = useState(false);
+  const [optionalTimePort, setOptionalTimePort] = useState(() => new Date());
   const [dayPeriod, setDayPeriod] = useState<TodoDayPeriodApi>('all_day');
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [tempPickerDate, setTempPickerDate] = useState(() => new Date());
@@ -285,6 +331,8 @@ export function TodoFormModal({
     setIntervalDays('');
     setUseOnceTime(false);
     setOnceTimePort(new Date());
+    setUseOptionalTimeLocal(false);
+    setOptionalTimePort(new Date());
     setDayPeriod('all_day');
     setPickerTarget(null);
     setLocalError(null);
@@ -306,6 +354,8 @@ export function TodoFormModal({
       setIntervalDays(f.intervalDays);
       setUseOnceTime(f.useOnceTime);
       setOnceTimePort(f.onceTimePort);
+      setUseOptionalTimeLocal(f.useOptionalTimeLocal);
+      setOptionalTimePort(f.optionalTimePort);
       setDayPeriod(f.dayPeriod);
     } else if (mode === 'create' && initialPlanSlotDraft) {
       setTitle(initialPlanSlotDraft.label);
@@ -319,6 +369,8 @@ export function TodoFormModal({
       setIntervalDays('');
       setUseOnceTime(false);
       setOnceTimePort(new Date());
+      setUseOptionalTimeLocal(false);
+      setOptionalTimePort(new Date());
       setDayPeriod('all_day');
       setPickerTarget(null);
     } else if (mode === 'create' && scheduleRangePrefill?.kind === 'week') {
@@ -409,6 +461,27 @@ export function TodoFormModal({
     closePickerModalDeferred();
   };
 
+  const openOptionalTimePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: optionalTimePort,
+        mode: 'time',
+        is24Hour: true,
+        onChange: (event, d) => {
+          if (event.type === 'set' && d) setOptionalTimePort(d);
+        },
+      });
+      return;
+    }
+    setTempPickerDate(new Date(optionalTimePort.getTime()));
+    setPickerTarget('optionalTime');
+  };
+
+  const confirmOptionalTimePicker = () => {
+    setOptionalTimePort(tempPickerDate);
+    closePickerModalDeferred();
+  };
+
   const submit = async () => {
     const built = buildBody(
       title,
@@ -423,6 +496,9 @@ export function TodoFormModal({
       useOnceTime,
       onceTimePort,
       dayPeriod,
+      useOptionalTimeLocal,
+      optionalTimePort,
+      mode,
     );
     if (!built.ok) {
       setLocalError(built.error);
@@ -491,6 +567,48 @@ export function TodoFormModal({
                       <Chip label="오전" selected={dayPeriod === 'am'} onPress={() => setDayPeriod('am')} />
                       <Chip label="오후" selected={dayPeriod === 'pm'} onPress={() => setDayPeriod('pm')} />
                     </View>
+                    {scheduleType !== 'once' ? (
+                      <>
+                        <FieldLabel>상세 시각 (선택)</FieldLabel>
+                        <Muted>미지정 시 종일·시간대만 적용</Muted>
+                        <View style={styles.chipWrap}>
+                          <Chip
+                            label="미지정"
+                            selected={!useOptionalTimeLocal}
+                            onPress={() => setUseOptionalTimeLocal(false)}
+                          />
+                          <Chip
+                            label="시각 지정"
+                            selected={useOptionalTimeLocal}
+                            onPress={() => setUseOptionalTimeLocal(true)}
+                          />
+                        </View>
+                        {useOptionalTimeLocal ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="상세 시각 선택"
+                            onPress={() => openOptionalTimePicker()}
+                            style={[
+                              styles.dateBtn,
+                              {
+                                borderColor: colors.border,
+                                borderRadius: radius.sm,
+                                borderWidth: stroke.width,
+                                backgroundColor: colors.cardMuted,
+                              },
+                            ]}
+                          >
+                            <Text style={{ fontFamily: fonts.bodyMedium, color: colors.text, fontSize: 15 }}>
+                              {optionalTimePort.toLocaleTimeString('ko-KR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
+                              })}
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                      </>
+                    ) : null}
                   </>
                 ) : null}
                 <FieldLabel>일정 유형</FieldLabel>
@@ -503,6 +621,9 @@ export function TodoFormModal({
                       onPress={() => {
                         setScheduleType(option.value);
                         setUseOnceTime(false);
+                        if (option.value === 'once' || option.value === 'someday') {
+                          setUseOptionalTimeLocal(false);
+                        }
                       }}
                     />
                   ))}
@@ -717,6 +838,27 @@ export function TodoFormModal({
                 }}
               />
               <PrimaryButton title="확인" onPress={confirmTimePicker} />
+              <SecondaryButton title="취소" onPress={closePickerModalDeferred} />
+            </Card>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={pickerTarget === 'optionalTime'} transparent animationType="slide">
+        <Pressable style={[styles.pickerOverlay, { backgroundColor: colors.overlay }]} onPress={closePickerModalDeferred}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <Card style={{ gap: spacing.md, margin: spacing.lg }}>
+              <Title>상세 시각 선택</Title>
+              <DateTimePicker
+                value={tempPickerDate}
+                mode="time"
+                display="spinner"
+                is24Hour
+                onChange={(_, d) => {
+                  if (d) setTempPickerDate(d);
+                }}
+              />
+              <PrimaryButton title="확인" onPress={confirmOptionalTimePicker} />
               <SecondaryButton title="취소" onPress={closePickerModalDeferred} />
             </Card>
           </Pressable>

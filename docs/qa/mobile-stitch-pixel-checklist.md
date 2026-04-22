@@ -63,13 +63,15 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 | 공지 셀 텍스트 줄바꿈/말줄임     | PASS | 중요 배지 + 제목 2줄 절삭으로 시안 정보 밀도에 맞춤 |
 
 
-## 2) Todos (`14b92fc3eb8b4cef972aaa41df8972f3`)
+## 2) Todos (`18a8cafbe56c4176802c0864961a3753`)
 
 
 | 항목                | 판정  | 메모  |
 | ----------------- | --- | --- |
 | 입력 카드(제목/기한) 간격   | PASS | 추가·수정 폼을 FAB→전면 모달로 분리(`TodoFormModal`), Chip/필드 간격은 DS 토큰 유지 |
-| 목록 셀 높이/텍스트 베이스라인 | PASS | 서버 정렬(미완료·dueAt 오름차순·완료 하단) 반영; 보조줄에 선택 시각(`dueAt`) 표시 |
+| 주·월 범위 진행률 카드      | PASS | `TodosScreen`: 일별과 동일 카드 패턴·라벨(이번 주/선택 주·이번 달/선택 월) |
+| 반복 일정 `timeLocal`(선택) | PASS | 시간대 아래 「상세 시각」칩 + 피커; API `timeLocal` HH:mm (`once`는 `dueAt`만) |
+| 목록 셀 높이/텍스트 베이스라인 | PASS | 서버 정렬(dueAt 동일 시 `timeLocal`); 보조줄에 `timeLocal`·`dueAt` 시각 표시 |
 | 완료 상태 취소선 표현      | PASS | 체크 아이콘 토글 시 제목 `line-through` |
 | 기한 수정 모달 오버레이 대비  | PASS | 날짜 전용 모달 제거, 동일 모달에서 전체 일정·우선순위 수정(PATCH) |
 | 반복 타입 선택 UI(once/daily/weekly/monthly/interval/someday) | PASS | `someday` 칩 추가; once·반복 시작/종료일은 달력 모달, once는 시간 선택(Android 네이티브 time) |

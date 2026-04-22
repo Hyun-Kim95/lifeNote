@@ -79,4 +79,9 @@ export class PatchTodoDto {
   @ValidateIf((_, v) => v !== null)
   @IsIn(['all_day', 'am', 'pm'])
   dayPeriod?: 'all_day' | 'am' | 'pm' | null;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  timeLocal?: string | null;
 }

@@ -216,12 +216,45 @@ function isTodoScheduledOnDate(todo: Todo, targetDate: Date): boolean {
   }
 }
 
-/** 미완료: 이른 dueAt 우선(dueAt 없음은 맨 아래)·같은 시각(또는 둘 다 없음)이면 우선순위 높은 것 먼저. 완료는 하단·updatedAt 최신 우선 */
+/** 미완료: 이른 dueAt 우선(dueAt 없음은 맨 아래)·동일 dueAt이면 timeLocal(HH:mm) 오름(null 맨 뒤)·우선순위·createdAt. 완료는 하단·updatedAt 최신 우선 */
 const prioritySortRank: Record<TodoPriority, number> = {
   HIGH: 0,
   NORMAL: 1,
   LOW: 2,
 };
+
+const TIME_LOCAL_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function normalizeTimeLocalInput(raw: string | undefined | null): string | null {
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  const s = raw.trim();
+  if (s === '') {
+    return null;
+  }
+  if (!TIME_LOCAL_RE.test(s)) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: 'timeLocal은 HH:mm 형식(00:00~23:59)이어야 합니다.',
+    });
+  }
+  return s;
+}
+
+/** 동일 dueAt일 때: timeLocal 오름차순, 둘 다 없으면 0, 한쪽만 없으면 없는 쪽이 뒤 */
+function compareTimeLocalForSort(a: string | null, b: string | null): number {
+  if (!a && !b) {
+    return 0;
+  }
+  if (!a) {
+    return 1;
+  }
+  if (!b) {
+    return -1;
+  }
+  return a.localeCompare(b);
+}
 
 function sortTodosForDisplay(a: Todo, b: Todo): number {
   if (a.done !== b.done) {
@@ -232,6 +265,10 @@ function sortTodosForDisplay(a: Todo, b: Todo): number {
     const bt = b.dueAt?.getTime() ?? Number.POSITIVE_INFINITY;
     if (at !== bt) {
       return at - bt;
+    }
+    const tl = compareTimeLocalForSort(a.timeLocal, b.timeLocal);
+    if (tl !== 0) {
+      return tl;
     }
     const pr = prioritySortRank[a.priority] - prioritySortRank[b.priority];
     if (pr !== 0) {
@@ -266,6 +303,7 @@ export class TodosService {
       intervalDays: t.intervalDays,
       done: t.done,
       dayPeriod: t.dayPeriod ? dayPeriodToApi[t.dayPeriod] : null,
+      timeLocal: t.timeLocal ?? null,
       planSlotId: t.planSlotId,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
@@ -471,6 +509,20 @@ export class TodosService {
       });
     }
 
+    const timeLocalNorm = normalizeTimeLocalInput(dto.timeLocal ?? null);
+    if (scheduleInput.scheduleType === 'someday' && timeLocalNorm) {
+      throw new BadRequestException({
+        code: 'INVALID_TODO_SCHEDULE',
+        message: '언젠가(someday) 일정에는 timeLocal을 지정할 수 없습니다.',
+      });
+    }
+    if (scheduleInput.scheduleType === 'once' && timeLocalNorm) {
+      throw new BadRequestException({
+        code: 'INVALID_TODO_SCHEDULE',
+        message: '특정 날짜(once) 일정은 timeLocal 대신 dueAt으로 시각을 지정하세요.',
+      });
+    }
+
     let dueAtVal: Date | null = null;
     if (scheduleInput.scheduleType === 'someday') {
       dueAtVal = null;
@@ -511,6 +563,12 @@ export class TodosService {
     const dayPeriodDb =
       dto.dayPeriod != null ? dayPeriodToDb[dto.dayPeriod] : undefined;
 
+    const timeLocalVal =
+      scheduleInput.scheduleType !== 'once' &&
+      scheduleInput.scheduleType !== 'someday'
+        ? timeLocalNorm
+        : null;
+
     const t = await this.prisma.todo.create({
       data: {
         userId,
@@ -527,6 +585,7 @@ export class TodosService {
         monthDay: scheduleInput.monthDay,
         intervalDays: scheduleInput.intervalDays,
         ...(dayPeriodDb ? { dayPeriod: dayPeriodDb } : {}),
+        ...(timeLocalVal ? { timeLocal: timeLocalVal } : {}),
         planSlotId,
       },
     });
@@ -599,7 +658,9 @@ export class TodosService {
         data.startDate = null;
         data.endDate = null;
         data.dueAt = null;
+        data.timeLocal = null;
       } else if (merged.scheduleType === 'once') {
+        data.timeLocal = null;
         const midnight =
           merged.startDate != null
             ? parseYmdToUtcDate(merged.startDate)
@@ -646,6 +707,30 @@ export class TodosService {
         const day = parseYmdToUtcDate(slice);
         data.dueOn = day;
         data.startDate = day;
+      }
+    }
+
+    if (dto.timeLocal !== undefined) {
+      const nextSt =
+        (data.scheduleType as TodoScheduleTypeDb | undefined) ??
+        existing.scheduleType;
+      const apiSt = scheduleTypeToApi[nextSt];
+      if (apiSt === 'someday' && dto.timeLocal !== null) {
+        throw new BadRequestException({
+          code: 'INVALID_TODO_SCHEDULE',
+          message: '언젠가(someday) 일정에는 timeLocal을 지정할 수 없습니다.',
+        });
+      }
+      if (apiSt === 'once' && dto.timeLocal !== null) {
+        throw new BadRequestException({
+          code: 'INVALID_TODO_SCHEDULE',
+          message: '특정 날짜(once) 일정은 timeLocal 대신 dueAt으로 시각을 지정하세요.',
+        });
+      }
+      if (dto.timeLocal === null) {
+        data.timeLocal = null;
+      } else {
+        data.timeLocal = normalizeTimeLocalInput(dto.timeLocal);
       }
     }
 

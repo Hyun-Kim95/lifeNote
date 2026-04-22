@@ -218,7 +218,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 - `date`·`weekStart`·`yearMonth`가 **모두 없으면** 날짜 스코프 없이 기존처럼 `dueOn`·`status` 등 DB 조건 + 페이지네이션으로 목록을 반환한다.
 - `dueOn`은 `scheduleType=once`인 단건 일정 필터에 우선 사용하고, 반복 일정은 위 스코프 날짜 기준으로 판정한다.
 - `scheduleType=someday`(언젠가)는 **날짜 조건 없이** `date`/`weekStart`/`yearMonth`가 지정된 목록에도 항상 포함된다.
-- `date`·`weekStart`·`yearMonth` 중 하나가 지정된 경우 응답 `items`는 **정렬된 배열**이다: 미완료(`done=false`)가 위, 완료가 아래. 미완료는 `dueAt` 오름차순(`dueAt` 없음은 미완료 구간 맨 아래), 동일 시 `createdAt` 오름차순. 완료는 `updatedAt` 내림차순.
+- `date`·`weekStart`·`yearMonth` 중 하나가 지정된 경우 응답 `items`는 **정렬된 배열**이다: 미완료(`done=false`)가 위, 완료가 아래. 미완료는 `dueAt` 오름차순(`dueAt` 없음은 미완료 구간 맨 아래), **`dueAt`이 같으면** `timeLocal`(HH:mm) 오름차순(`null`은 해당 그룹 맨 뒤), 그다음 우선순위·`createdAt` 오름차순. 완료는 `updatedAt` 내림차순.
 
 **Response 200**
 
@@ -239,6 +239,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
       "priority": "normal",
       "done": false,
       "dayPeriod": "all_day",
+      "timeLocal": "09:30",
       "planSlotId": null,
       "createdAt": "2026-04-13T…Z",
       "updatedAt": "2026-04-13T…Z"
@@ -250,6 +251,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 ```
 
 - `dayPeriod`(선택): `all_day` \| `am` \| `pm` \| `null`(미지정·기존 데이터).
+- `timeLocal`(선택): `HH:mm`(00:00~23:59). **반복·간격**(`once`·`someday` 제외) 일정의 선택 시각(클라이언트 로컬 표기). `once`는 `dueAt`만 사용. `someday`에는 둘 수 없음(`null`만).
 - `planSlotId`(선택): 주간 계획 슬롯에서 생성한 할 일이면 해당 `PlanSlot.id`, 아니면 `null`.
 
 ### 5.2 `POST /v1/todos`
@@ -265,29 +267,31 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
   "startDate": "2026-04-15",
   "dueAt": "2026-04-15T05:30:00.000Z",
   "dayPeriod": "all_day",
+  "timeLocal": "14:00",
   "planSlotId": "clx…"
 }
 ```
 
 - `dayPeriod`(선택): `all_day` \| `am` \| `pm`. 생략 시 저장값 `null`(미지정).
+- `timeLocal`(선택): `HH:mm`. `daily`·`weekly`·`monthly`·`interval`에서만 허용. `once`·`someday` 타입에 `timeLocal`을 넣으면 **400** `INVALID_TODO_SCHEDULE`.
 - `dueAt`(선택): ISO 8601. `once`에서 시각을 두면 정렬·표시에 사용. 생략 시 서버가 날짜만으로 `dueAt`을 채울 수 있다.
 - `scheduleType: "someday"`인 경우 `dueOn`/`startDate`/`dueAt`을 보내지 않는다.
 - `planSlotId`(선택): 본인 소유 주간 계획의 `PlanSlot.id`만 허용. 유효하지 않으면 `VALIDATION_ERROR`.
 
 ### 5.3 `PATCH /v1/todos/{id}`
 
-`title`, `priority`, `done`, `scheduleType`, `dueOn`, `dueAt`, `startDate`, `endDate`, `weekdays`, `monthDay`, `intervalDays`, `dayPeriod`(`null`로 미지정 복귀) 부분 갱신.
+`title`, `priority`, `done`, `scheduleType`, `dueOn`, `dueAt`, `startDate`, `endDate`, `weekdays`, `monthDay`, `intervalDays`, `dayPeriod`(`null`로 미지정 복귀), `timeLocal`(`null`로 제거) 부분 갱신.
 
 ### 5.4 반복 타입/필드 규칙 요약
 
 | `scheduleType` | 필수 필드 | 선택 필드 | 규칙 |
 |----------------|-----------|-----------|------|
 | `once` | `startDate`(또는 `dueOn`/`dueAt`에서 유도) | `dueOn`, `dueAt` | 단일 날짜 일정. `dueAt`이 있으면 정렬·시각 표시에 사용(ISO 8601). 날짜만이면 해당일 00:00 UTC로 저장될 수 있음 |
-| `daily` | - | `startDate`, `endDate` | 시작일부터 매일 노출. `endDate` 있으면 포함 범위 종료 |
-| `weekly` | `weekdays` | `startDate`, `endDate` | `weekdays`는 1(월)~7(일) 배열 |
-| `monthly` | `monthDay` | `startDate`, `endDate` | `monthDay` 1~31 |
-| `interval` | `startDate`, `intervalDays` | `endDate` | `intervalDays`는 1 이상 정수 |
-| `someday` | - | - | 날짜·`dueAt` 없음. `someday`에는 `dueAt`을 둘 수 없음 |
+| `daily` | - | `startDate`, `endDate`, `timeLocal` | 시작일부터 매일 노출. `endDate` 있으면 포함 범위 종료. `timeLocal` 선택 |
+| `weekly` | `weekdays` | `startDate`, `endDate`, `timeLocal` | `weekdays`는 1(월)~7(일) 배열 |
+| `monthly` | `monthDay` | `startDate`, `endDate`, `timeLocal` | `monthDay` 1~31 |
+| `interval` | `startDate`, `intervalDays` | `endDate`, `timeLocal` | `intervalDays`는 1 이상 정수 |
+| `someday` | - | - | 날짜·`dueAt`·`timeLocal` 없음. `someday`에는 `dueAt`·`timeLocal` 불가 |
 
 - `scheduleType=once`에서는 **날짜**가 반드시 필요하며(`startDate`/`dueOn`/`dueAt` 중 서버가 유도 가능한 값), null 요청은 `VALIDATION_ERROR`로 차단한다.
 - 하위 호환을 위해 `dueOn`은 단일 일정 표현 필드로 병행 유지한다.

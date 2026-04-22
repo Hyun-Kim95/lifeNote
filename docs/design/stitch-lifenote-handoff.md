@@ -2,7 +2,7 @@
 type: doc
 project: lifeNote
 doc_lane: design
-updated_at: 2026-04-15T12:30:00
+updated_at: 2026-04-22T12:00:00
 tags: [docs, vault-sync]
 ---
 # Stitch + 자체 목업 이관 기록 — lifeNote (2026-04-14)
@@ -58,7 +58,7 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 | 흐름 | 자체 목업 (HTML) | Stitch 화면 제목 | `screens/{id}` |
 |------|------------------|------------------|----------------|
 | 모바일 홈 | `mock-internal/app-home.html` | 홈 (오늘) | `b9fcf59c776642e6b8edd1a6e46199ab` |
-| 모바일 To-do | `mock-internal/app-todo.html` | 오늘의 할 일 목록 | `14b92fc3eb8b4cef972aaa41df8972f3` |
+| 모바일 To-do | `mock-internal/app-todo.html` | 오늘의 할 일 (리뉴얼) | `18a8cafbe56c4176802c0864961a3753` |
 | 식비 일별 기록 | `mock-internal/app-budget.html` | 식비 기록 | `a2e2b7f5307d43dc875ffcb5aa88d5bb` |
 | 주간 계획표 | `mock-internal/app-plan.html` | 주간 계획표 | `416c8f8a79864af1a32f6e382e8fc017` |
 | 일기 작성 | `mock-internal/app-diary.html` | 일기 작성 | `969235ea993246fc8e38cd2316b22155` |
@@ -81,7 +81,9 @@ Stitch UI에서 위 제목 또는 프로젝트 ID로 연다.
 - **1차**: 모바일 홈, 데스크톱 공지, 모바일 To-do.
 - **2차(부족 화면 보강)**: 식비 기록, SNS 로그인, 주간 계획표, 일기 작성, 명언 배너 관리, 회원 관리.
 - **3차(2026-04-15, 모바일 보강)**: 통계 요약(`generate_screen_from_text` 후 `apply_design_system`으로 DS `17014072979125403972` 확정·스크린 ID 갱신), 커뮤니티 피드·글 상세·댓글, 회원 공지 목록·상세, 더보기 메뉴 허브, 설정 및 프로필.
-- 모델: `GEMINI_3_FLASH` (`generate_screen_from_text`).
+- **4차(2026-04-22, To-do 기획 정합)**: PRD·`api-contract-lifenote-v1.md` §5.1에 맞춘 **일별·주별·월별** 범위, **전체·미완료·완료** 상태, **종일·오전·오후** 구간, 진행률 카드·행 메타(우선순위·반복·시각)를 반영해 기존 화면 `14b92fc3eb8b4cef972aaa41df8972f3`에 대해 `edit_screens`(`GEMINI_3_FLASH`)로 재생성. 확정 스크린 ID **`033ee695cd4d4bd787787995c4160ab7`** (제목: 오늘의 할 일 (업데이트)). 세션 `3556184140196282592`.
+- **5차(2026-04-22, UI 정리)**: 햄버거 제거·주·월 진행률 카드·할 일 추가 시트에 **상세 시각(선택)** 반영. 스크린 **`18a8cafbe56c4176802c0864961a3753`** (제목: 오늘의 할 일 (리뉴얼)). 세션 `5038895502413143843`.
+- 모델: `GEMINI_3_FLASH` (`generate_screen_from_text` / `edit_screens`).
 
 ## Stitch 후속 제안(에이전트 출력 취합)
 

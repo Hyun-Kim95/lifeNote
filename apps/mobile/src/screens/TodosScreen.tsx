@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import {
+  ActionSheetIOS,
   Alert,
+  Platform,
   Pressable,
   SectionList,
   StyleSheet,
@@ -18,6 +20,8 @@ import {
 } from '../components/TodoFormModal';
 import {
   Badge,
+  Body,
+  Card,
   Chip,
   EmptyState,
   ErrorText,
@@ -40,6 +44,7 @@ import {
   dayPeriodLabel,
   describeSchedule,
   formatDueAtTimeLocal,
+  formatTimeLocalLabel,
   priorityLabel,
   scheduleTypeLabel,
   todoDisplayDayPeriod,
@@ -54,6 +59,8 @@ type TodoListResponse = {
 };
 
 type TodosScope = 'day' | 'week' | 'month';
+
+type TodoStatusFilter = 'all' | 'open' | 'done';
 
 type TodoSection = { title: string; data: Todo[] };
 
@@ -74,6 +81,7 @@ export function TodosScreen() {
   const route = useRoute<RouteProp<MainTabParamList, 'TodosTab'>>();
 
   const [scope, setScope] = useState<TodosScope>('day');
+  const [statusFilter, setStatusFilter] = useState<TodoStatusFilter>('all');
   const [selectedDay, setSelectedDay] = useState(() => toYmd(new Date()));
   const [weekMonday, setWeekMonday] = useState(() => getWeekMonday());
   const [yearMonth, setYearMonth] = useState(() => currentYearMonth());
@@ -95,22 +103,35 @@ export function TodosScreen() {
     setToday(todayKey);
     setError(null);
     try {
-      let qs = 'status=all&limit=100';
-      if (scope === 'day') {
-        qs += `&date=${selectedDay}`;
-      } else if (scope === 'week') {
-        qs += `&weekStart=${weekMonday}`;
-      } else {
-        qs += `&yearMonth=${yearMonth}`;
-      }
-      const res = await requestJson<TodoListResponse>(`/v1/todos?${qs}`);
-      const list = res.items ?? [];
+      const baseQs = (status: TodoStatusFilter) => {
+        let qs = `status=${status}&limit=100`;
+        if (scope === 'day') {
+          qs += `&date=${selectedDay}`;
+        } else if (scope === 'week') {
+          qs += `&weekStart=${weekMonday}`;
+        } else {
+          qs += `&yearMonth=${yearMonth}`;
+        }
+        return qs;
+      };
+
+      const listPromise = requestJson<TodoListResponse>(`/v1/todos?${baseQs(statusFilter)}`);
+      const statsPromise =
+        statusFilter === 'all'
+          ? null
+          : requestJson<TodoListResponse>(`/v1/todos?${baseQs('all')}`).catch(() => null);
+
+      const [listRes, allRes] = await Promise.all([listPromise, statsPromise]);
+      const list = listRes.items ?? [];
       setItems(list);
-      if (res.stats) {
-        setStats(res.stats);
+
+      const statsSource = statusFilter === 'all' ? listRes : allRes ?? listRes;
+      if (statsSource.stats) {
+        setStats(statsSource.stats);
       } else {
-        const completed = list.filter((i) => i.done).length;
-        setStats({ completed, total: list.length });
+        const srcItems = statusFilter === 'all' ? list : (allRes?.items ?? list);
+        const completed = srcItems.filter((i) => i.done).length;
+        setStats({ completed, total: srcItems.length });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '오류');
@@ -118,7 +139,7 @@ export function TodosScreen() {
     } finally {
       setLoading(false);
     }
-  }, [requestJson, scope, selectedDay, weekMonday, yearMonth]);
+  }, [requestJson, scope, statusFilter, selectedDay, weekMonday, yearMonth]);
 
   useFocusEffect(
     useCallback(() => {
@@ -146,6 +167,7 @@ export function TodosScreen() {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   const ratio = total > 0 ? completed / total : 0;
   const remaining = total - completed;
+  const listCount = items.length;
 
   const toggle = async (t: Todo) => {
     setSaving(true);
@@ -169,6 +191,31 @@ export function TodosScreen() {
         onPress: () => void deleteTodo(t.id),
       },
     ]);
+  };
+
+  const openTodoRowMenu = (t: Todo) => {
+    const edit = () => openEdit(t);
+    const del = () => confirmDelete(t);
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['취소', '수정', '삭제'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+          title: t.title,
+        },
+        (i) => {
+          if (i === 1) edit();
+          if (i === 2) del();
+        },
+      );
+    } else {
+      Alert.alert(t.title, undefined, [
+        { text: '취소', style: 'cancel' },
+        { text: '수정', onPress: edit },
+        { text: '삭제', style: 'destructive', onPress: del },
+      ]);
+    }
   };
 
   const deleteTodo = async (id: string) => {
@@ -247,6 +294,38 @@ export function TodosScreen() {
         selected={scope === 'month'}
         onPress={() => {
           setScope('month');
+          setLoading(true);
+        }}
+      />
+    </View>
+  );
+
+  const statusChipRow = (
+    <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+      <Chip
+        label="전체"
+        selected={statusFilter === 'all'}
+        onPress={() => {
+          if (statusFilter === 'all') return;
+          setStatusFilter('all');
+          setLoading(true);
+        }}
+      />
+      <Chip
+        label="미완료"
+        selected={statusFilter === 'open'}
+        onPress={() => {
+          if (statusFilter === 'open') return;
+          setStatusFilter('open');
+          setLoading(true);
+        }}
+      />
+      <Chip
+        label="완료"
+        selected={statusFilter === 'done'}
+        onPress={() => {
+          if (statusFilter === 'done') return;
+          setStatusFilter('done');
           setLoading(true);
         }}
       />
@@ -352,6 +431,26 @@ export function TodosScreen() {
       </View>
     );
 
+  const progressCardTitle =
+    scope === 'day'
+      ? selectedDay === today
+        ? '오늘 진행률'
+        : '선택일 진행률'
+      : scope === 'week'
+        ? weekMonday === getWeekMonday()
+          ? '이번 주 진행률'
+          : '선택 주 진행률'
+        : yearMonth === currentYearMonth()
+          ? '이번 달 진행률'
+          : '선택 월 진행률';
+
+  const scopeSummaryMuted =
+    scope === 'day'
+      ? `${selectedDay} 기준${statusFilter !== 'all' ? ` · 목록 ${listCount}건` : total > 0 ? ` · 총 ${total}개` : ''}`
+      : scope === 'week'
+        ? `${weekMonday} ~ ${addDaysLocal(weekMonday, 6)} 기준${statusFilter !== 'all' ? ` · 목록 ${listCount}건` : total > 0 ? ` · 총 ${total}개` : ''}`
+        : `${yearMonth} 기준${statusFilter !== 'all' ? ` · 목록 ${listCount}건` : total > 0 ? ` · 총 ${total}개` : ''}`;
+
   const header = (
     <View
       style={{
@@ -361,44 +460,44 @@ export function TodosScreen() {
         gap: spacing.md,
       }}
     >
-      <Title>할 일</Title>
+      <Title>오늘의 할 일</Title>
       {scopeBar}
       {periodNav}
-      {scope === 'day' ? (
-        <>
-          <Muted>{`${selectedDay} 기준${total > 0 ? ` · 총 ${total}개` : ''}`}</Muted>
+      {statusChipRow}
+      <Muted>{scopeSummaryMuted}</Muted>
+      <Card style={{ gap: spacing.sm }}>
+        <View style={styles.cardHeaderRow}>
           <View
-            style={{
-              borderWidth: stroke.width,
-              borderColor: colors.border,
-              borderRadius: radius.md,
-              padding: spacing.md,
-              gap: spacing.sm,
-              backgroundColor: colors.cardMuted,
-            }}
+            style={[
+              styles.todoLeadIcon,
+              {
+                borderColor: colors.primary,
+                borderRadius: radius.round,
+                backgroundColor: colors.card,
+              },
+            ]}
           >
-            <SectionLabel>{selectedDay === today ? '오늘 진행률' : '선택일 진행률'}</SectionLabel>
-            <Text
-              style={{
-                color: colors.text,
-                fontFamily: fonts.titleSemi,
-                fontSize: 28,
-                lineHeight: 36,
-              }}
-            >{`${percent}%`}</Text>
-            <Muted>{`${completed} / ${total} 완료`}</Muted>
-            <LinearProgressBar ratio={ratio} />
-            <Muted>{statusLine}</Muted>
+            <Ionicons name="checkmark" size={icon.sm} color={colors.primary} />
           </View>
-        </>
-      ) : (
-        <Muted>
-          {scope === 'week'
-            ? `선택한 주에 걸리는 할 일입니다. 주간 슬롯은 더보기 → 주간 계획에서 편집할 수 있어요.`
-            : `선택한 달에 한 번이라도 노출되는 할 일입니다.`}
-          {total > 0 ? ` · 총 ${total}개` : ''}
-        </Muted>
-      )}
+          <SectionLabel>{progressCardTitle}</SectionLabel>
+        </View>
+        <Text
+          style={{
+            color: colors.text,
+            fontFamily: fonts.titleSemi,
+            fontSize: 32,
+            lineHeight: 40,
+          }}
+        >{`${percent}%`}</Text>
+        <Muted>{`${completed} / ${total} 완료`}</Muted>
+        <LinearProgressBar ratio={ratio} />
+        <Muted>{statusLine}</Muted>
+      </Card>
+      {scope === 'week' ? (
+        <Muted>선택한 주에 걸리는 할 일입니다. 주간 슬롯은 더보기 → 주간 계획에서 편집할 수 있어요.</Muted>
+      ) : scope === 'month' ? (
+        <Muted>선택한 달에 한 번이라도 노출되는 할 일입니다.</Muted>
+      ) : null}
       {error ? <ErrorText>{error}</ErrorText> : null}
     </View>
   );
@@ -407,9 +506,10 @@ export function TodosScreen() {
 
   const renderTodo = ({ item }: { item: Todo }) => {
     const timeHint = formatDueAtTimeLocal(item.dueAt);
+    const localTl = formatTimeLocalLabel(item.timeLocal);
     const meta = `${priorityLabel[item.priority] ?? item.priority} · ${describeSchedule(item)}${
-      timeHint ? ` · ${timeHint}` : ''
-    }`;
+      localTl ? ` · ${localTl}` : ''
+    }${timeHint ? ` · ${timeHint}` : ''}`;
     return (
       <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.sm }}>
         <View
@@ -533,6 +633,18 @@ export function TodosScreen() {
 }
 
 const styles = StyleSheet.create({
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  todoLeadIcon: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
   rowAction: {
     paddingVertical: 6,
     paddingHorizontal: 4,

@@ -84,4 +84,9 @@ export class CreateTodoDto {
   @IsOptional()
   @IsIn(['all_day', 'am', 'pm'])
   dayPeriod?: 'all_day' | 'am' | 'pm';
+
+  /** once 제외·someday 불가. 로컬 의미 `HH:mm` */
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  timeLocal?: string;
 }

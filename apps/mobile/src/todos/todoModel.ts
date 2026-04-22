@@ -26,6 +26,8 @@ export type Todo = {
   dayPeriod?: TodoDayPeriodApi | null;
   /** 주간 계획 슬롯에서 생성 시 */
   planSlotId?: string | null;
+  /** 반복·간격: 선택 시각 HH:mm (클라이언트 로컬 표기). once는 dueAt 사용 */
+  timeLocal?: string | null;
 };
 
 export const priorityLabel: Record<string, string> = {
@@ -109,4 +111,10 @@ export function formatDueAtTimeLocal(iso: string | null | undefined): string | n
   } catch {
     return null;
   }
+}
+
+/** API `timeLocal` (HH:mm) — 그대로 표시 */
+export function formatTimeLocalLabel(raw: string | null | undefined): string | null {
+  if (!raw || !/^\d{2}:\d{2}$/.test(raw.trim())) return null;
+  return raw.trim();
 }

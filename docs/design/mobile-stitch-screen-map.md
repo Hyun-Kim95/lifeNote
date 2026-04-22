@@ -2,7 +2,7 @@
 type: doc
 project: lifeNote
 doc_lane: design
-updated_at: 2026-04-15T22:05:00
+updated_at: 2026-04-22T12:00:00
 tags: [mobile, stitch, mapping]
 ---
 
@@ -17,7 +17,7 @@ tags: [mobile, stitch, mapping]
 | 앱 화면 | 코드 경로 | Stitch 화면 ID | Stitch 화면명 |
 |---|---|---|---|
 | 홈 | `apps/mobile/src/screens/HomeScreen.tsx` | `b9fcf59c776642e6b8edd1a6e46199ab` | 홈 (오늘) |
-| 할 일 | `apps/mobile/src/screens/TodosScreen.tsx` | `14b92fc3eb8b4cef972aaa41df8972f3` | 오늘의 할 일 목록 |
+| 할 일 | `apps/mobile/src/screens/TodosScreen.tsx` | `18a8cafbe56c4176802c0864961a3753` | 오늘의 할 일 (리뉴얼) |
 | 식비 | `apps/mobile/src/screens/FoodScreen.tsx` | `a2e2b7f5307d43dc875ffcb5aa88d5bb` | 식비 기록 |
 | 계획 | `apps/mobile/src/screens/PlanScreen.tsx` | `416c8f8a79864af1a32f6e382e8fc017` | 주간 계획표 |
 | 일기 | `apps/mobile/src/screens/DiaryScreen.tsx` | `969235ea993246fc8e38cd2316b22155` | 일기 작성 |
