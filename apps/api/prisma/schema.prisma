@@ -22,6 +22,7 @@ model User {
   accounts          Account[]
   todos             Todo[]
   foodMonthBudgets  FoodMonthBudget[]
+  foodCategoryBudgets FoodCategoryBudget[]
   foodDaySpends     FoodDaySpend[]
   weekPlans         WeekPlan[]
   diaries           Diary[]
@@ -126,6 +127,20 @@ model FoodMonthBudget {
   budgetAmount  Int
 
   @@unique([userId, yearMonth])
+}
+
+/// 월별 카테고리 식비 예산(사용자별, 카테고리별 선택 설정)
+model FoodCategoryBudget {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yearMonth    String
+  /// meal | grocery | cafe | transit | medical | culture | other
+  category     String
+  budgetAmount Int
+
+  @@unique([userId, yearMonth, category])
+  @@index([userId, yearMonth])
 }
 
 /// 일별 식비 지출(사용자별, 일 1건 upsert)

@@ -7,10 +7,15 @@ import {
   parseYmdToUtcDate,
 } from '../common/utils/date-parse';
 import { PutFoodDayDto } from './dto/put-food-day.dto';
-import { isFoodDayCategory } from './food-day-category';
+import {
+  FOOD_DAY_CATEGORY_VALUES,
+  isFoodDayCategory,
+  type FoodDayCategory,
+} from './food-day-category';
 
 /** 수정 월 포함, 그 다음 달부터 같은 예산을 연속 적용하는 횟수(0~36 → 총 37개월) */
 const BUDGET_CASCADE_LAST_OFFSET = 36;
+type CategoryBudgetInput = { category: FoodDayCategory; budgetAmount: number | null };
 
 function assertYearMonth(ym: string): void {
   if (!/^\d{4}-\d{2}$/.test(ym)) {
@@ -45,6 +50,36 @@ function decodeDaysCursor(cursor: string): { date: Date; createdAt: Date; id: st
   return { date, createdAt, id };
 }
 
+function normalizeCategoryBudgets(
+  items?: Array<{ category: string; budgetAmount?: number | null }>,
+): CategoryBudgetInput[] | null {
+  if (!items) return null;
+  const seen = new Set<string>();
+  const normalized: CategoryBudgetInput[] = [];
+  for (const item of items) {
+    const category = (item.category ?? '').toLowerCase();
+    if (!isFoodDayCategory(category)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'categoryBudgets.category는 허용된 카테고리 값이어야 합니다.',
+      });
+    }
+    if (seen.has(category)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'categoryBudgets.category는 중복될 수 없습니다.',
+      });
+    }
+    seen.add(category);
+    normalized.push({
+      category,
+      budgetAmount:
+        item.budgetAmount == null ? null : Math.max(0, Math.round(item.budgetAmount)),
+    });
+  }
+  return normalized;
+}
+
 @Injectable()
 export class FoodBudgetService {
   constructor(private readonly prisma: PrismaService) {}
@@ -53,11 +88,23 @@ export class FoodBudgetService {
     assertYearMonth(yearMonth);
     const { start, end } = monthRangeUtc(yearMonth);
 
-    const [row, agg] = await Promise.all([
+    const [row, agg, categoryBudgetRows, categorySpentRows] = await Promise.all([
       this.prisma.foodMonthBudget.findUnique({
         where: { userId_yearMonth: { userId, yearMonth } },
       }),
       this.prisma.foodDaySpend.aggregate({
+        where: {
+          userId,
+          date: { gte: start, lte: end },
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.foodCategoryBudget.findMany({
+        where: { userId, yearMonth },
+        orderBy: { category: 'asc' },
+      }),
+      this.prisma.foodDaySpend.groupBy({
+        by: ['category'],
         where: {
           userId,
           date: { gte: start, lte: end },
@@ -69,16 +116,53 @@ export class FoodBudgetService {
     const budgetAmount = row?.budgetAmount ?? 0;
     const spentAmount = agg._sum.amount ?? 0;
     const remainingAmount = budgetAmount - spentAmount;
+    const categoryBudgetMap = new Map(
+      categoryBudgetRows.map((r) => [r.category, r.budgetAmount]),
+    );
+    const categorySpentMap = new Map(
+      categorySpentRows.map((r) => [r.category, r._sum.amount ?? 0]),
+    );
+    const categoryBudgets = FOOD_DAY_CATEGORY_VALUES.map((category) => {
+      const categoryBudgetAmount = categoryBudgetMap.get(category) ?? null;
+      const categorySpentAmount = categorySpentMap.get(category) ?? 0;
+      return {
+        category,
+        budgetAmount: categoryBudgetAmount,
+        spentAmount: categorySpentAmount,
+        remainingAmount:
+          categoryBudgetAmount == null ? null : categoryBudgetAmount - categorySpentAmount,
+      };
+    });
+    const totalCategoryBudgeted = categoryBudgets.reduce(
+      (sum, c) => sum + (c.budgetAmount ?? 0),
+      0,
+    );
+    const unsetCategoryCount = categoryBudgets.filter(
+      (c) => c.budgetAmount == null,
+    ).length;
+    const overBudgetAmount = Math.max(0, totalCategoryBudgeted - budgetAmount);
 
     return {
       yearMonth,
       budgetAmount,
       spentAmount,
       remainingAmount,
+      categoryBudgets,
+      categoryBudgetStatus: {
+        totalCategoryBudgeted,
+        deltaFromMonthBudget: totalCategoryBudgeted - budgetAmount,
+        overBudgetAmount,
+        unsetCategoryCount,
+      },
     };
   }
 
-  async putMonth(userId: string, yearMonth: string, budgetAmount: number) {
+  async putMonth(
+    userId: string,
+    yearMonth: string,
+    budgetAmount: number,
+    categoryBudgets?: Array<{ category: string; budgetAmount?: number | null }>,
+  ) {
     assertYearMonth(yearMonth);
     const currentYm = currentYearMonthUtc();
     if (yearMonth < currentYm) {
@@ -87,14 +171,35 @@ export class FoodBudgetService {
         message: '과거 월 예산은 수정할 수 없습니다.',
       });
     }
-    for (let i = 0; i <= BUDGET_CASCADE_LAST_OFFSET; i++) {
-      const ym = addMonthsYearMonthUtc(yearMonth, i);
-      await this.prisma.foodMonthBudget.upsert({
-        where: { userId_yearMonth: { userId, yearMonth: ym } },
-        create: { userId, yearMonth: ym, budgetAmount },
-        update: { budgetAmount },
-      });
-    }
+    const normalizedCategoryBudgets = normalizeCategoryBudgets(categoryBudgets);
+    await this.prisma.$transaction(async (tx) => {
+      for (let i = 0; i <= BUDGET_CASCADE_LAST_OFFSET; i++) {
+        const ym = addMonthsYearMonthUtc(yearMonth, i);
+        await tx.foodMonthBudget.upsert({
+          where: { userId_yearMonth: { userId, yearMonth: ym } },
+          create: { userId, yearMonth: ym, budgetAmount },
+          update: { budgetAmount },
+        });
+        if (normalizedCategoryBudgets) {
+          await tx.foodCategoryBudget.deleteMany({
+            where: { userId, yearMonth: ym },
+          });
+          const rows = normalizedCategoryBudgets.filter(
+            (item) => item.budgetAmount != null,
+          );
+          if (rows.length > 0) {
+            await tx.foodCategoryBudget.createMany({
+              data: rows.map((item) => ({
+                userId,
+                yearMonth: ym,
+                category: item.category,
+                budgetAmount: item.budgetAmount as number,
+              })),
+            });
+          }
+        }
+      }
+    });
     return this.getMonth(userId, yearMonth);
   }
 

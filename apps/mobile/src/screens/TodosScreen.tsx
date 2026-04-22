@@ -506,7 +506,8 @@ export function TodosScreen() {
 
   const renderTodo = ({ item }: { item: Todo }) => {
     const timeHint = formatDueAtTimeLocal(item.dueAt);
-    const localTl = formatTimeLocalLabel(item.timeLocal);
+    const displayPeriod = todoDisplayDayPeriod(item);
+    const localTl = displayPeriod === 'am' || displayPeriod === 'pm' ? formatTimeLocalLabel(item.timeLocal) : null;
     const meta = `${priorityLabel[item.priority] ?? item.priority} · ${describeSchedule(item)}${
       localTl ? ` · ${localTl}` : ''
     }${timeHint ? ` · ${timeHint}` : ''}`;
@@ -517,11 +518,12 @@ export function TodosScreen() {
             borderWidth: stroke.width,
             borderColor: colors.border,
             borderRadius: radius.sm,
-            padding: spacing.md,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.md + 2,
             backgroundColor: colors.card,
             flexDirection: 'row',
             alignItems: 'flex-start',
-            gap: spacing.sm,
+            gap: spacing.sm + 2,
           }}
         >
           <Pressable
@@ -542,8 +544,8 @@ export function TodosScreen() {
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
             <Text
               style={{
-                fontSize: 15,
-                lineHeight: 22,
+                fontSize: 16,
+                lineHeight: 24,
                 fontFamily: fonts.bodyMedium,
                 color: colors.text,
                 textDecorationLine: item.done ? 'line-through' : 'none',

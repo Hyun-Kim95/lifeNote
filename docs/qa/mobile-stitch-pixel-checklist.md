@@ -25,12 +25,12 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 - [ ] 실기기 캡처(핵심 5개 + 보조 화면)를 첨부해 픽셀 증빙 완료
 - [ ] Todos 반복 규칙 결함 차단: `scheduleType=once` + `schedule.date=null` 요청이 4xx로 거절되는지 확인
 - [ ] 403 권한 UI(권한 제한/접근 불가) 화면별 표시를 수동 점검
-- [ ] 핵심 5개 화면(Home/Todos/Food/Plan/Community)에서 FIX 0개 확인
+- [ ] 핵심 5개 화면(Home/Todos/Food/Diary/NoticeDetail)에서 FIX 0개 확인
 
 ## 사용 방법
 
 - 기준: Stitch 화면(우선) + handoff 토큰(보정)
-- 우선순위: `Home -> Todos -> Food -> Plan -> Community`
+- 우선순위: `Home -> Todos -> Food -> Diary -> NoticeDetail`
 - 판정: `PASS` / `FIX` / `N/A`
 - `FIX`는 반드시 메모에 수치 또는 위치를 남긴다.
 
@@ -70,7 +70,7 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 | ----------------- | --- | --- |
 | 입력 카드(제목/기한) 간격   | PASS | 추가·수정 폼을 FAB→전면 모달로 분리(`TodoFormModal`), Chip/필드 간격은 DS 토큰 유지 |
 | 주·월 범위 진행률 카드      | PASS | `TodosScreen`: 일별과 동일 카드 패턴·라벨(이번 주/선택 주·이번 달/선택 월) |
-| 반복 일정 `timeLocal`(선택) | PASS | 시간대 아래 「상세 시각」칩 + 피커; API `timeLocal` HH:mm (`once`는 `dueAt`만) |
+| 상세 시각(am/pm 전용) | PASS | 시간대가 오전/오후일 때만 「상세 시각」 노출·저장, 종일 전환 시 값 자동 제거 (`once`는 날짜 아래 별도 시간 섹션 없음) |
 | 목록 셀 높이/텍스트 베이스라인 | PASS | 서버 정렬(dueAt 동일 시 `timeLocal`); 보조줄에 `timeLocal`·`dueAt` 시각 표시 |
 | 완료 상태 취소선 표현      | PASS | 체크 아이콘 토글 시 제목 `line-through` |
 | 기한 수정 모달 오버레이 대비  | PASS | 날짜 전용 모달 제거, 동일 모달에서 전체 일정·우선순위 수정(PATCH) |
@@ -84,31 +84,30 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 | 항목             | 판정  | 메모  |
 | -------------- | --- | --- |
 | 월 예산 카드 계층/간격  | PASS | `FoodScreen`: 월 헤더(‹ YYYY년 M월 ›)·남은 금액 강조·지갑 아이콘·이번 달 예산/누적 사용 행·예산 입력·Stitch 톤 |
+| 카테고리 예산 UX | PASS | 월 예산 모달 내 카테고리 예산(Top3 기본 + 더보기), 합계/초과/미설정 상태 문구로 soft split 안내 |
 | 일별 지출 셀 타이포 계층 | PASS | 날짜 `Muted` → 메모 `Body` → 금액 trailing `−n`·Material 아이콘(메모 키워드 휴리스틱) |
 | 날짜/메모 보조 텍스트 톤 | PASS | Stitch 최근 기록 행과 동일 계층 |
 | 빈 상태 카드 정렬     | PASS | `inventory-2` + 「기록이 없어요」+ 보조 `Muted` |
 
 
-## 4) Plan (`416c8f8a79864af1a32f6e382e8fc017`)
+## 4) Diary (`969235ea993246fc8e38cd2316b22155`)
 
 
-| 항목               | 판정  | 메모  |
-| ---------------- | --- | --- |
-| 요일 칩 선택 상태 시각    |     |     |
-| 시간대 칩 선택 상태 시각   |     |     |
-| 슬롯 행(라벨/부가정보) 계층 |     |     |
-| 삭제 버튼 위치/간격      |     |     |
+| 항목 | 판정 | 메모 |
+| --- | --- | --- |
+| 회고형 입력 가이드 문구 노출 | PASS | 지출/할 일 완료 감상 중심 문구 노출 여부 확인 |
+| 템플릿/자유 입력 전환 흐름 | PASS | 템플릿 선택 후 본문 편집 및 저장 흐름 확인 |
+| 저장/수정 후 목록 반영 | PASS | 당일 일기 저장/수정이 즉시 반영되는지 확인 |
 
 
-## 5) Community (`fdeaf95b5c744ec0935877662f5feb98`)
+## 5) NoticeDetail + Inquiry (`b1c6883c93ae48c282fd09d0c228eacb`)
 
 
-| 항목               | 판정  | 메모  |
-| ---------------- | --- | --- |
-| 피드 셀 제목/본문 3줄 절삭 |     |     |
-| 작성 카드 인풋 높이/간격   |     |     |
-| FAB 위치/크기/그림자    |     |     |
-| 빈 상태/오류 카드 톤     |     |     |
+| 항목 | 판정 | 메모 |
+| --- | --- | --- |
+| 공지 하단 문의 진입 버튼 노출 | PASS | NoticeDetail 하단에서 문의 진입 확인 |
+| 문의 등록 폼 필드/검증 | PASS | 제목·내용 필수 검증 및 저장 흐름 확인 |
+| 문의 상태 표시(`submitted/in_review/answered`) | PASS | 내 문의 목록/상세 상태 배지 문구 확인 |
 
 
 ---
@@ -125,14 +124,14 @@ tags: [mobile, stitch, pixel-check, gate-hold]
 | Diary         | `969235ea993246fc8e38cd2316b22155` |     |     |
 | Stats         | `fa1c858125d3420ca709f1506308081c` |     |     |
 | Settings      | `58d954d20a5b47bd99613d646036ccae` |     |     |
-| CommunityPost | `2aded8ac6cd5460293fdbe3429b7cd0c` |     |     |
+| Inquiry       | `공지 상세 하단 연계` |     |     |
 
 
 ---
 
 ## 최종 마감 규칙
 
-- 핵심 5개 화면에서 `FIX` 0개가 될 때까지 반복
+- 핵심 5개 화면(Home/Todos/Food/Diary/NoticeDetail)에서 `FIX` 0개가 될 때까지 반복
 - 보조 화면에서 `FIX`가 남아도 릴리즈 시점에는 반드시 잔여 갭 명시
 - `rc-uat-handoff.md`의 실기기 체크와 동기화
 

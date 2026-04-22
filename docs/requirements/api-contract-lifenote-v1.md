@@ -302,7 +302,9 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 ---
 
-## 6. 주간 계획표
+## 6. 주간 계획표 (2차 — 계약 예약)
+
+1차 오픈 범위에서 제외. 아래 엔드포인트는 구현 예약 상태로 유지한다.
 
 ### 6.1 `GET /v1/plans/weeks/{weekStart}`
 
@@ -334,7 +336,9 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 ---
 
-## 7. 일기
+## 7. 일기 (회고형)
+
+일기 본문은 “오늘 지출/할 일 완료에 대한 감상” 중심의 회고형 기록을 기본으로 한다.
 
 ### 7.1 `GET /v1/diary-templates`
 
@@ -345,7 +349,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 ```json
 {
   "items": [
-    { "id": "dtpl_…", "name": "감사 3줄", "schema": { "lines": 3 } }
+    { "id": "dtpl_…", "name": "오늘 소비 회고", "schema": { "lines": 3 } }
   ]
 }
 ```
@@ -385,16 +389,42 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
   "yearMonth": "2026-04",
   "budgetAmount": 400000,
   "spentAmount": 275800,
-  "remainingAmount": 124200
+  "remainingAmount": 124200,
+  "categoryBudgets": [
+    { "category": "meal", "budgetAmount": 180000, "spentAmount": 162000, "remainingAmount": 18000 },
+    { "category": "grocery", "budgetAmount": 120000, "spentAmount": 83000, "remainingAmount": 37000 },
+    { "category": "cafe", "budgetAmount": null, "spentAmount": 22000, "remainingAmount": null }
+  ],
+  "categoryBudgetStatus": {
+    "totalCategoryBudgeted": 300000,
+    "deltaFromMonthBudget": -100000,
+    "overBudgetAmount": 0,
+    "unsetCategoryCount": 4
+  }
 }
 ```
 
 ### 8.2 `PUT /v1/budgets/food/months/{yearMonth}`
 
-**Body** `{ "budgetAmount": 400000 }`
+**Body**
+
+```json
+{
+  "budgetAmount": 400000,
+  "categoryBudgets": [
+    { "category": "meal", "budgetAmount": 180000 },
+    { "category": "grocery", "budgetAmount": 120000 },
+    { "category": "cafe", "budgetAmount": null }
+  ]
+}
+```
+
+- `categoryBudgets`는 선택. 전달 시 카테고리별 예산을 같은 달부터 미래 적용 범위에 함께 반영한다.
+- `categoryBudgets[].budgetAmount: null`은 해당 카테고리 예산을 **미설정**으로 저장한다.
+- soft split 정책: 카테고리 합계가 `budgetAmount`를 초과해도 저장은 허용하고, 응답 `categoryBudgetStatus`로 경고 판단 정보를 제공한다.
 
 - **과거 월(UTC 기준 현재 달 `YYYY-MM`보다 이전)** 은 수정할 수 없다. 위반 시 **400** `VALIDATION_ERROR` (예: 메시지 «과거 월 예산은 수정할 수 없습니다.»).
-- 허용된 경우, 요청한 `yearMonth`에 예산을 upsert하고, **그 달을 포함해 이후 달로 같은 `budgetAmount`를 연속 적용**한다(구현 기준: 시작 월 + 이후 36개월, 총 37개월 upsert).
+- 허용된 경우, 요청한 `yearMonth`에 예산을 upsert하고, **그 달을 포함해 이후 달로 같은 `budgetAmount`를 연속 적용**한다(구현 기준: 시작 월 + 이후 36개월, 총 37개월 upsert). `categoryBudgets`를 보냈다면 같은 범위에 카테고리 예산도 동일하게 복사 적용한다.
 
 ### 8.3 `GET /v1/budgets/food/months/{yearMonth}/days`
 
@@ -484,6 +514,79 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 **Response 200** — `title`, `body`(HTML 또는 마크다운), `publishedAt` 등.
 
+### 9.3 문의 (공지 하단 진입, 1차 포함)
+
+#### `POST /v1/inquiries`
+
+문의 등록.
+
+**Body**
+
+```json
+{
+  "noticeId": "nt_...",
+  "title": "앱 사용 문의",
+  "body": "문의 내용..."
+}
+```
+
+**Response 201**
+
+```json
+{
+  "id": "inq_...",
+  "noticeId": "nt_...",
+  "title": "앱 사용 문의",
+  "body": "문의 내용...",
+  "status": "submitted",
+  "createdAt": "2026-04-22T10:00:00.000Z",
+  "updatedAt": "2026-04-22T10:00:00.000Z"
+}
+```
+
+#### `GET /v1/inquiries`
+
+내 문의 목록.
+
+**Response 200**
+
+```json
+{
+  "items": [
+    {
+      "id": "inq_...",
+      "noticeId": "nt_...",
+      "title": "앱 사용 문의",
+      "status": "in_review",
+      "createdAt": "2026-04-22T10:00:00.000Z",
+      "updatedAt": "2026-04-22T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### `GET /v1/inquiries/{id}`
+
+내 문의 상세/답변 상태.
+
+**Response 200**
+
+```json
+{
+  "id": "inq_...",
+  "noticeId": "nt_...",
+  "title": "앱 사용 문의",
+  "body": "문의 내용...",
+  "status": "answered",
+  "answer": "답변 본문",
+  "answeredAt": "2026-04-23T01:10:00.000Z",
+  "createdAt": "2026-04-22T10:00:00.000Z",
+  "updatedAt": "2026-04-23T01:10:00.000Z"
+}
+```
+
+- 상태값: `submitted | in_review | answered`
+
 ---
 
 ## 10. 명언 배너(앱 노출)
@@ -535,7 +638,7 @@ SNS(**1차: 구글**)에서 받은 **인가 코드** 또는 **ID 토큰**을 서
 
 ---
 
-## 12. 커뮤니티 (2차 — 계약 예약)
+## 12. 커뮤니티 (2차 — 계약 예약, 1차 제외)
 
 MVP에 포함하지 않을 경우 엔드포인트는 구현 보류. 포함 시 아래를 구체화한다.
 

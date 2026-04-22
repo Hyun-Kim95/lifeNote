@@ -47,6 +47,18 @@ type MonthRes = {
   budgetAmount: number;
   spentAmount: number;
   remainingAmount: number;
+  categoryBudgets?: Array<{
+    category: ExpenseCategoryId;
+    budgetAmount: number | null;
+    spentAmount: number;
+    remainingAmount: number | null;
+  }>;
+  categoryBudgetStatus?: {
+    totalCategoryBudgeted: number;
+    deltaFromMonthBudget: number;
+    overBudgetAmount: number;
+    unsetCategoryCount: number;
+  };
 };
 
 type DayRow = {
@@ -65,6 +77,7 @@ const YMD_IN_MONTH = /^\d{4}-\d{2}-\d{2}$/;
 const DAYS_PAGE_SIZE = 20;
 
 type ListCategoryFilter = 'all' | ExpenseCategoryId;
+type CategoryBudgetInputs = Partial<Record<ExpenseCategoryId, string>>;
 
 function parseYearMonth(ym: string): { y: number; m: number } {
   const [ys, ms] = ym.split('-');
@@ -101,6 +114,14 @@ function coerceExpenseCategory(id: string | null | undefined): ExpenseCategoryId
 
 function formatKrw(n: number): string {
   return `₩ ${n.toLocaleString('ko-KR')}`;
+}
+
+function parseBudgetInputToInt(raw: string): number | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const n = Number(v.replace(/,/g, ''));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n);
 }
 
 /** `ymd`가 `yearMonth`(YYYY-MM) 달에 속하는지 — `startsWith`는 2026-10 vs 2026-1 등에서 오탐 가능해 금지 */
@@ -153,6 +174,8 @@ export function FoodScreen() {
   const [error, setError] = useState<string | null>(null);
   const [budgetInput, setBudgetInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [categoryBudgetInputs, setCategoryBudgetInputs] = useState<CategoryBudgetInputs>({});
+  const [categoryBudgetExpanded, setCategoryBudgetExpanded] = useState(false);
 
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [expenseModalVisible, setExpenseModalVisible] = useState(false);
@@ -166,6 +189,7 @@ export function FoodScreen() {
   const [tempExpensePickerDate, setTempExpensePickerDate] = useState(() => new Date());
 
   const canEditBudget = yearMonth >= currentYearMonth();
+  const priorityCategoryIds: ExpenseCategoryId[] = ['meal', 'grocery', 'cafe'];
 
   const categoryQuery = listCategory === 'all' ? 'all' : listCategory;
 
@@ -189,6 +213,12 @@ export function FoodScreen() {
       const m = await requestJson<MonthRes>(`/v1/budgets/food/months/${yearMonth}`);
       setMonth(m);
       setBudgetInput(String(m.budgetAmount));
+      const nextCategoryInputs: CategoryBudgetInputs = {};
+      for (const item of m.categoryBudgets ?? []) {
+        nextCategoryInputs[item.category] =
+          item.budgetAmount == null ? '' : String(item.budgetAmount);
+      }
+      setCategoryBudgetInputs(nextCategoryInputs);
       await fetchDaysFirst();
     } catch (e) {
       setMonth(null);
@@ -252,6 +282,13 @@ export function FoodScreen() {
     if (!month || !canEditBudget) return;
     setError(null);
     setBudgetInput(String(month.budgetAmount));
+    const nextCategoryInputs: CategoryBudgetInputs = {};
+    for (const item of month.categoryBudgets ?? []) {
+      nextCategoryInputs[item.category] =
+        item.budgetAmount == null ? '' : String(item.budgetAmount);
+    }
+    setCategoryBudgetInputs(nextCategoryInputs);
+    setCategoryBudgetExpanded(false);
     setBudgetModalVisible(true);
   };
 
@@ -332,12 +369,19 @@ export function FoodScreen() {
       setError('예산 금액을 확인해 주세요.');
       return;
     }
+    const categoryBudgetsPayload = EXPENSE_CATEGORIES.map((c) => ({
+      category: c.id,
+      budgetAmount: parseBudgetInputToInt(categoryBudgetInputs[c.id] ?? ''),
+    }));
     setSaving(true);
     setError(null);
     try {
       await requestJson(`/v1/budgets/food/months/${yearMonth}`, {
         method: 'PUT',
-        body: { budgetAmount: Math.round(n) },
+        body: {
+          budgetAmount: Math.round(n),
+          categoryBudgets: categoryBudgetsPayload,
+        },
       });
       await load();
       setBudgetModalVisible(false);
@@ -441,6 +485,61 @@ export function FoodScreen() {
     </View>
   );
 
+  const categorySummaries = (month?.categoryBudgets ?? [])
+    .map((item) => {
+      const info = EXPENSE_CATEGORIES.find((c) => c.id === item.category);
+      return {
+        ...item,
+        label: info?.label ?? item.category,
+      };
+    })
+    .sort((a, b) => (b.spentAmount || 0) - (a.spentAmount || 0));
+  const topCategorySummaries = categorySummaries.slice(0, 3);
+  const totalCategoryBudgeted = (month?.categoryBudgetStatus?.totalCategoryBudgeted ??
+    categorySummaries.reduce((sum, item) => sum + (item.budgetAmount ?? 0), 0));
+  const deltaFromMonthBudget =
+    month?.categoryBudgetStatus?.deltaFromMonthBudget ??
+    totalCategoryBudgeted - (month?.budgetAmount ?? 0);
+  const overBudgetAmount = Math.max(0, deltaFromMonthBudget);
+  const unsetCategoryCount =
+    month?.categoryBudgetStatus?.unsetCategoryCount ??
+    categorySummaries.filter((item) => item.budgetAmount == null).length;
+  const budgetStatusTone =
+    overBudgetAmount > 0
+      ? colors.error
+      : unsetCategoryCount > 0
+        ? colors.textMuted
+        : colors.primary;
+  const budgetStatusText =
+    overBudgetAmount > 0
+      ? `주의 · 카테고리 합계가 월 예산보다 ${formatKrw(overBudgetAmount)} 많아요`
+      : unsetCategoryCount > 0
+        ? `미설정 · ${unsetCategoryCount}개 카테고리 예산을 아직 정하지 않았어요`
+        : '정상 · 카테고리 예산 합계가 월 예산 범위 안에 있어요';
+  const draftMonthBudget = Number(budgetInput.replace(/,/g, ''));
+  const safeDraftMonthBudget =
+    Number.isFinite(draftMonthBudget) && draftMonthBudget >= 0 ? Math.round(draftMonthBudget) : 0;
+  const draftTotalCategoryBudgeted = EXPENSE_CATEGORIES.reduce(
+    (sum, c) => sum + (parseBudgetInputToInt(categoryBudgetInputs[c.id] ?? '') ?? 0),
+    0,
+  );
+  const draftUnsetCategoryCount = EXPENSE_CATEGORIES.filter(
+    (c) => parseBudgetInputToInt(categoryBudgetInputs[c.id] ?? '') == null,
+  ).length;
+  const draftOverBudgetAmount = Math.max(0, draftTotalCategoryBudgeted - safeDraftMonthBudget);
+  const draftBudgetStatusTone =
+    draftOverBudgetAmount > 0
+      ? colors.error
+      : draftUnsetCategoryCount > 0
+        ? colors.textMuted
+        : colors.primary;
+  const draftBudgetStatusText =
+    draftOverBudgetAmount > 0
+      ? `주의 · 카테고리 합계가 월 예산보다 ${formatKrw(draftOverBudgetAmount)} 많아요`
+      : draftUnsetCategoryCount > 0
+        ? `미설정 · ${draftUnsetCategoryCount}개 카테고리 예산을 아직 정하지 않았어요`
+        : '정상 · 카테고리 예산 합계가 월 예산 범위 안에 있어요';
+
   const header = (
     <View
       style={{
@@ -526,7 +625,34 @@ export function FoodScreen() {
             {formatKrw(month.remainingAmount)}
           </Text>
           {statRow('이번 달 예산', formatKrw(month.budgetAmount))}
+          {statRow('카테고리 예산 합계', formatKrw(totalCategoryBudgeted))}
           {statRow('누적 사용', formatKrw(month.spentAmount))}
+          <Text
+            style={{
+              marginTop: spacing.sm,
+              fontSize: 13,
+              lineHeight: 18,
+              color: budgetStatusTone,
+              fontFamily: fonts.bodyMedium,
+            }}
+          >
+            {budgetStatusText}
+          </Text>
+          {topCategorySummaries.length > 0 ? (
+            <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+              {topCategorySummaries.map((item) => (
+                <View
+                  key={item.category}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                  <Muted>{item.label}</Muted>
+                  <Text style={{ color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18 }}>
+                    {`${formatKrw(item.spentAmount)} / ${item.budgetAmount == null ? '미설정' : formatKrw(item.budgetAmount)}`}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </Card>
       ) : null}
 
@@ -610,6 +736,46 @@ export function FoodScreen() {
               {error ? <ErrorText>{error}</ErrorText> : null}
               <Muted>{`${formatYearMonthLabel(yearMonth)} 예산 (원)`}</Muted>
               <Input value={budgetInput} onChangeText={setBudgetInput} keyboardType="number-pad" />
+              <FieldLabel>카테고리 예산 (선택)</FieldLabel>
+              <Muted>합계가 월 예산과 달라도 저장할 수 있어요. 초과 시 안내가 표시됩니다.</Muted>
+              <View style={{ gap: spacing.sm }}>
+                {EXPENSE_CATEGORIES.filter(
+                  (c) =>
+                    priorityCategoryIds.includes(c.id) ||
+                    categoryBudgetExpanded,
+                ).map((c) => (
+                  <View key={c.id} style={{ gap: 6 }}>
+                    <Muted>{c.label}</Muted>
+                    <Input
+                      value={categoryBudgetInputs[c.id] ?? ''}
+                      onChangeText={(v) =>
+                        setCategoryBudgetInputs((prev) => ({ ...prev, [c.id]: v }))
+                      }
+                      keyboardType="number-pad"
+                      placeholder="미설정"
+                    />
+                  </View>
+                ))}
+                <Pressable
+                  onPress={() => setCategoryBudgetExpanded((v) => !v)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, paddingVertical: 4 })}
+                >
+                  <Text style={{ color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 14 }}>
+                    {categoryBudgetExpanded ? '카테고리 접기' : '카테고리 더 보기'}
+                  </Text>
+                </Pressable>
+              </View>
+              <Text
+                style={{
+                  fontSize: 13,
+                  lineHeight: 18,
+                  color: draftBudgetStatusTone,
+                  fontFamily: fonts.bodyMedium,
+                }}
+              >
+                {`카테고리 합계 ${formatKrw(draftTotalCategoryBudgeted)} · ${draftBudgetStatusText}`}
+              </Text>
               <PrimaryButton title="저장" onPress={() => void saveBudget()} loading={saving} />
               <SecondaryButton title="닫기" onPress={() => { setError(null); setBudgetModalVisible(false); }} />
             </Card>

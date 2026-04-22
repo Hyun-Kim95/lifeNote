@@ -85,6 +85,11 @@ export class FoodBudgetController {
     @Param('yearMonth') yearMonth: string,
     @Body() dto: PutFoodMonthDto,
   ) {
-    return this.food.putMonth(user.userId, yearMonth, dto.budgetAmount);
+    return this.food.putMonth(
+      user.userId,
+      yearMonth,
+      dto.budgetAmount,
+      dto.categoryBudgets,
+    );
   }
 }

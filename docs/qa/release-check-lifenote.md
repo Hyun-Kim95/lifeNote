@@ -41,7 +41,7 @@ release-check 절차상 아래는 **실제 브라우저·기기**에서 한 번 
 
 - 웹: 반응형(모바일 폭), 다크모드(시스템/브라우저), 랜딩·로그인·관리자 등 **노출 라우트**의 로딩·빈·오류 상태(일반 사용자 기능 페이지는 웹에서 제거됨)
 - 웹 인증: `/login` → `/auth/callback` → 세션 저장/로그아웃 동작
-- 모바일(RC 기준): **Google 로그인** 후 홈·To-do·식비·주간 계획·일기·공지·커뮤니티·통계·설정 플로우를 실제 API와 연동해 확인한다. API 베이스는 `EXPO_PUBLIC_API_BASE_URL`(에뮬레이터 `http://10.0.2.2:4000`, iOS 시뮬레이터 `http://localhost:4000`, 실기기는 PC LAN IP). `__DEV__`에서만 **개발자 토큰 붙여넣기**가 허용된다.
+- 모바일(RC 기준): **Google 로그인** 후 홈·To-do·식비·일기·공지·문의·통계·설정 플로우를 실제 API와 연동해 확인한다. API 베이스는 `EXPO_PUBLIC_API_BASE_URL`(에뮬레이터 `http://10.0.2.2:4000`, iOS 시뮬레이터 `http://localhost:4000`, 실기기는 PC LAN IP). `__DEV__`에서만 **개발자 토큰 붙여넣기**가 허용된다.
 - 관리자: 필터·페이지네이션(15건) 동작, 관리자 토큰으로만 접근 가능 여부
 - 관리자: 정적 증빙은 `docs/qa/evidence/` 및 `docs/qa/admin-prd-stitch-checklist.md` 참고
 
@@ -49,12 +49,14 @@ release-check 절차상 아래는 **실제 브라우저·기기**에서 한 번 
 
 - Playwright E2E는 개발 서버(`next dev`) 기준으로 동작하며, 일부 Next.js 경고(예: `allowedDevOrigins`)는 **개발 모드 한정** 메시지일 수 있음. 프로덕션 빌드(`next build`)와 별도로 스테이징에서 확인 권장.
 - Stitch와 픽셀 단위 일치는 별도 시각 검수 항목으로 남길 수 있음(기능·계약과 별개).
+- 1차 제외 기능(주간계획·커뮤니티)이 더보기/탭/딥링크에서 노출되지 않는지 반드시 확인.
 
 ## 5. 배포 후 모니터링 포인트
 
 - API: `GET /v1/health`, 5xx 비율, DB 연결 오류
 - 인증: OAuth/Google, JWT 만료·리프레시 실패율
 - CORS: 프로덕션 웹 출처가 `CORS_ORIGIN`에 포함되는지
+- 문의: 등록 실패율, 상태 전환(`submitted/in_review/answered`) 지연률
 
 ## 6. 즉시 수정 권장 (이번 점검에서 반영한 항목)
 
