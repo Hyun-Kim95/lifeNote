@@ -1,3 +1,11 @@
+﻿---
+type: doc
+project: lifeNote
+doc_lane: requirements
+updated_at: 2026-04-12T00:04:11
+tags: [docs, vault-sync]
+---
+
 # requirements
 
 이 폴더는 요구사항 정리 문서를 저장한다.
@@ -13,3 +21,10 @@
 - feature-user-management.md
 - admin-board-requirements.md
 - mobile-app-navigation.md
+## Vault
+
+- [[lifeNote/docs/lifeNote-docs-hub|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]
+
+

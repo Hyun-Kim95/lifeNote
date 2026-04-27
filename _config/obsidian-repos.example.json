@@ -1,10 +1,10 @@
-{
+﻿{
   "repositories": [
     {
-      "slug": "my-cursor-template",
+      "slug": "lifeNote",
       "displayName": "My Cursor template (optional)",
       "hubFileStem": "my-template-hub",
-      "path": "d:\\cursor\\my-cursor-template",
+      "path": "D:\\cursor\\lifeNote",
       "docsPaths": ["docs"]
     },
     {
@@ -14,3 +14,4 @@
     }
   ]
 }
+

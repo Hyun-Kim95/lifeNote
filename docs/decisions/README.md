@@ -1,3 +1,11 @@
+﻿---
+type: doc
+project: lifeNote
+doc_lane: decisions
+updated_at: 2026-04-21T21:51:12
+tags: [docs, vault-sync]
+---
+
 # decisions
 
 이 폴더는 중요한 설계/정책 결정 사항을 기록한다.
@@ -12,3 +20,10 @@
 권장 파일명 예시:
 - 2026-04-11-web-vs-app-list-policy.md
 - 2026-04-11-dark-mode-token-policy.md
+## Vault
+
+- [[lifeNote/docs/lifeNote-docs-hub|Hub]]
+- [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
+- [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]
+
+

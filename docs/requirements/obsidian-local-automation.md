@@ -2,7 +2,7 @@
 type: doc
 project: lifeNote
 doc_lane: requirements
-updated_at: 2026-04-16T00:00:00
+updated_at: 2026-04-15T01:04:56
 tags: [docs, vault-sync]
 ---
 # Obsidian Local Automation (B + C + 활용 고도화)
@@ -93,6 +93,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\install-
 
 ## 5) Cursor 에이전트 편집 시 자동 동기화
 
+고객 프로젝트 **단계 3 이후** 선택용 가드·테스트 루프는 [Delivery loop harness](../agent/delivery-loop-harness.md)를 본다.
+
 Cursor의 `afterFileEdit` 훅(파일 쓰기 이벤트, matcher: `Write|TabWrite`)이 `docs` 경로 또는 `.md` 변경을 감지하면 `sync-docs.ps1`를 호출한다.
 
 운영 포인트:
@@ -181,9 +183,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normaliz
 - 시크릿이 포함될 수 있는 원문 diff 전문은 저장하지 않는다.
 - 프로젝트 허브는 `[[<project>/docs/<stem>]]`를 기준으로 링크한다(`<stem>`은 ingest 규칙과 동일).
 
-## 9) 공통 납품 게이트 메모 (디자인 선택 이후)
+## 9) 공통 완료 게이트 메모 (디자인 선택 이후)
 
-아래 항목은 고객사 납품 흐름에서 디자인 선택 이후(3단계) 착수 전에 확인한다.
+아래 항목은 고객사 프로젝트 전체 흐름에서 디자인 선택 이후(3단계) 착수 전에 확인한다.
 
 ### 9.1 3단계 진입 전 체크리스트 문서화
 
@@ -209,4 +211,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\obsidian\normaliz
 - [[lifeNote/docs/lifeNote-docs-hub|Hub]]
 - [[lifeNote/docs/obsidian/dashboards/projects-overview|Dashboards]]
 - [[lifeNote/docs/obsidian/dashboards/commit-journal-overview|Commit journals (Dataview)]]
+
 

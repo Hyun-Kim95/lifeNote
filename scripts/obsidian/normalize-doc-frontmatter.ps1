@@ -78,8 +78,7 @@ function Get-ExpectedVaultBlock {
 
 function Test-HasYamlFrontmatter {
     param([string]$Text)
-    $trimmed = ($Text -replace '^\uFEFF', '').TrimStart()
-    return $trimmed.StartsWith("---")
+    return ($Text.TrimStart().StartsWith("---"))
 }
 
 function Get-VaultSectionRange {
@@ -255,7 +254,7 @@ foreach ($lane in $lanes) {
         if (-not $isMismatch) {
             Write-Host "OK    $full"
             $summary.OK++
-            continue
+            return
         }
 
         $reasonParts = New-Object System.Collections.Generic.List[string]
@@ -265,10 +264,10 @@ foreach ($lane in $lanes) {
         if ($needsHeader) { $null = $reasonParts.Add("vault-append") }
         $reason = ($reasonParts -join ",")
 
-        if ($CheckOnly -or ((-not $needsHeader) -and (-not $FixMismatch))) {
+        if ($CheckOnly -or (-not $FixMismatch -and -not $needsHeader)) {
             Write-Host "MISMATCH  $reason  $full"
             $summary.Mismatch++
-            continue
+            return
         }
 
         $out = $raw
